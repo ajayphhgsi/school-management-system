@@ -1,0 +1,12 @@
+HTTP/1.1 302 Found
+Host: localhost:8000
+Date: Thu, 25 Dec 2025 08:06:16 GMT
+Connection: close
+X-Powered-By: PHP/8.3.14
+Set-Cookie: PHPSESSID=8bpgnvi2cv3n9rmb7k1fuea7fn; path=/
+Expires: Thu, 19 Nov 1981 08:52:00 GMT
+Cache-Control: no-store, no-cache, must-revalidate
+Pragma: no-cache
+Location: /login
+Content-type: text/html; charset=UTF-8
+
