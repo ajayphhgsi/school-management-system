@@ -102,28 +102,32 @@ ob_start();
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="certificate-card card text-center h-100" onclick="selectCertificateType('character')">
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <i class="fas fa-user-check fa-3x text-info"></i>
+                        <a href="/admin/certificates/character" class="text-decoration-none">
+                            <div class="certificate-card card text-center h-100">
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <i class="fas fa-user-check fa-3x text-info"></i>
+                                    </div>
+                                    <h5 class="card-title">Character Certificate</h5>
+                                    <p class="card-text text-muted">Generate character certificates</p>
+                                    <span class="badge bg-info">Available</span>
                                 </div>
-                                <h5 class="card-title">Character Certificate</h5>
-                                <p class="card-text text-muted">Generate character certificates</p>
-                                <span class="badge bg-secondary">Coming Soon</span>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     <div class="col-md-4">
-                        <div class="certificate-card card text-center h-100" onclick="selectCertificateType('bonafide')">
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <i class="fas fa-stamp fa-3x text-warning"></i>
+                        <a href="/admin/certificates/bonafide" class="text-decoration-none">
+                            <div class="certificate-card card text-center h-100">
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <i class="fas fa-stamp fa-3x text-warning"></i>
+                                    </div>
+                                    <h5 class="card-title">Bonafide Certificate</h5>
+                                    <p class="card-text text-muted">Generate bonafide certificates</p>
+                                    <span class="badge bg-warning">Available</span>
                                 </div>
-                                <h5 class="card-title">Bonafide Certificate</h5>
-                                <p class="card-text text-muted">Generate bonafide certificates</p>
-                                <span class="badge bg-secondary">Coming Soon</span>
                             </div>
-                        </div>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -307,9 +311,8 @@ function selectCertificateType(type) {
     if (type === 'transfer') {
         document.getElementById('transferCertificateSection').classList.remove('d-none');
         loadStudents();
-    } else {
-        alert('This certificate type is not yet implemented');
     }
+    // Character and Bonafide certificates now have their own pages
 }
 
 // Load students based on class filter
@@ -427,39 +430,33 @@ function generateCertificate() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
     btn.disabled = true;
 
-    // AJAX request to generate certificate
-    fetch('/admin/certificates/generate', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': data.csrf_token
-        },
-        body: JSON.stringify({
-            student_id: selectedStudent.id,
-            certificate_type: 'transfer',
-            transfer_reason: data.transfer_reason,
-            issue_date: data.issue_date,
-            conduct: data.conduct,
-            remarks: data.remarks
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            window.open(data.certificate_url, '_blank');
-            alert('Transfer certificate generated successfully!');
-        } else {
-            alert('Error generating certificate: ' + (data.message || 'Unknown error'));
-        }
-    })
-    .catch(error => {
-        console.error('Error generating certificate:', error);
-        alert('Error generating certificate. Please try again.');
-    })
-    .finally(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    });
+    // Submit form to generate certificate (will redirect to print page)
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/admin/certificates/generate';
+    form.style.display = 'none';
+
+    // Add form fields
+    const fields = {
+        csrf_token: data.csrf_token,
+        student_id: selectedStudent.id,
+        certificate_type: 'transfer',
+        transfer_reason: data.transfer_reason,
+        issue_date: data.issue_date,
+        conduct: data.conduct,
+        remarks: data.remarks
+    };
+
+    for (const [key, value] of Object.entries(fields)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = value;
+        form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
 }
 
 // Preview certificate

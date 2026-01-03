@@ -38,12 +38,15 @@ ob_start();
                                 <td><?php echo date('d M Y', strtotime($cert['issue_date'])); ?></td>
                                 <td><?php echo htmlspecialchars($cert['transfer_reason'] ?? 'N/A'); ?></td>
                                 <td>
-                                    <a href="/admin/certificates/view/<?php echo $cert['id']; ?>" class="btn btn-sm btn-outline-primary" title="View">
+                                    <a href="/admin/certificates/view/<?php echo $cert['id']; ?>" class="btn btn-sm btn-outline-primary" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="/temp/<?php echo basename($cert['pdf_path']); ?>" target="_blank" class="btn btn-sm btn-outline-success" title="Download PDF">
-                                        <i class="fas fa-download"></i>
+                                    <a href="/admin/certificates/print/<?php echo $cert['id']; ?>" target="_blank" class="btn btn-sm btn-outline-success" title="Print Certificate">
+                                        <i class="fas fa-print"></i>
                                     </a>
+                                    <button type="button" class="btn btn-sm btn-outline-warning" title="Re-administer Student" onclick="reAdministerStudent(<?php echo $cert['student_id']; ?>, '<?php echo htmlspecialchars($cert['first_name'] . ' ' . $cert['last_name']); ?>')">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -60,6 +63,35 @@ ob_start();
         <a href="/admin/certificates" class="btn btn-primary">Issue New Certificate</a>
     </div>
 <?php endif; ?>
+
+<script>
+function reAdministerStudent(studentId, studentName) {
+    if (confirm(`Are you sure you want to re-administer ${studentName}? This will make the student active again and remove the TC issued status.`)) {
+        fetch(`/admin/certificates/re-administer/${studentId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                _token: '<?php echo $csrf_token ?? ''; ?>'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Student re-administered successfully');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.message || 'Failed to re-administer student'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while re-administering the student');
+        });
+    }
+}
+</script>
 
 <?php
 $content = ob_get_clean();

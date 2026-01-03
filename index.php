@@ -106,7 +106,12 @@ $router->get('/admin/certificates', 'AdminController@certificates');
 $router->get('/admin/certificates/students', 'AdminController@getCertificateStudents');
 $router->post('/admin/certificates/generate', 'AdminController@generateCertificate');
 $router->get('/admin/certificates/tc', 'AdminController@tcCertificates');
+$router->get('/admin/certificates/character', 'AdminController@characterCertificates');
+$router->get('/admin/certificates/bonafide', 'AdminController@bonafideCertificates');
 $router->get('/admin/certificates/view/{id}', 'AdminController@viewCertificate');
+$router->get('/admin/certificates/print/{id}', 'AdminController@printCertificate');
+$router->post('/admin/certificates/re-administer/{id}', 'AdminController@reAdministerStudent');
+$router->get('/admin/certificates/print-tc', 'AdminController@printTC');
 
 // Marksheet Generation
 $router->get('/admin/exams/create', 'AdminController@createExam');

@@ -198,6 +198,27 @@ ob_start();
                 </div>
             </div>
 
+            <!-- Certificate Settings -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0 text-primary"><i class="fas fa-certificate me-2"></i>Certificate Settings</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="tc_prefix" class="form-label">Transfer Certificate Prefix</label>
+                            <input type="text" class="form-control" id="tc_prefix" name="tc_prefix" value="<?= htmlspecialchars($settings['tc_prefix'] ?? 'TC') ?>" maxlength="10">
+                            <small class="form-text text-muted">Prefix for transfer certificate numbers (e.g., TC, TRANS)</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="tc_start_number" class="form-label">TC Starting Number</label>
+                            <input type="number" class="form-control" id="tc_start_number" name="tc_start_number" value="<?= htmlspecialchars($settings['tc_start_number'] ?? '1') ?>" min="1">
+                            <small class="form-text text-muted">Starting number for transfer certificates</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="mt-4">
                 <button type="submit" class="btn btn-primary">Save All Settings</button>
             </div>

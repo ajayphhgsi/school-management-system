@@ -10,9 +10,6 @@ ob_start();
         <p class="text-muted mb-0">Certificate No: <?php echo htmlspecialchars($certificate['certificate_number']); ?></p>
     </div>
     <div>
-        <a href="/temp/<?php echo basename($certificate['pdf_path']); ?>" target="_blank" class="btn btn-success me-2">
-            <i class="fas fa-download me-1"></i>Download PDF
-        </a>
         <a href="/admin/certificates/tc" class="btn btn-secondary">
             <i class="fas fa-arrow-left me-1"></i>Back to List
         </a>
