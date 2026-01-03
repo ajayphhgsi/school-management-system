@@ -1563,6 +1563,37 @@ class AdminController extends Controller {
         $this->render('admin/certificates/view', ['certificate' => $certificate]);
     }
 
+    public function printStudentApplication($studentId) {
+        // Get student details with class information
+        $student = $this->db->selectOne("
+            SELECT s.*, c.class_name, c.section
+            FROM students s
+            LEFT JOIN classes c ON s.class_id = c.id
+            WHERE s.id = ?
+        ", [$studentId]);
+
+        if (!$student) {
+            $this->session->setFlash('error', 'Student not found');
+            $this->redirect('/admin/students');
+        }
+
+        // Get school settings
+        $schoolName = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_name'")['setting_value'] ?? 'School Management System';
+        $schoolAddress = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_address'")['setting_value'] ?? '';
+        $schoolPhone = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_phone'")['setting_value'] ?? '';
+        $schoolEmail = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_email'")['setting_value'] ?? '';
+        $schoolLogo = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_logo'")['setting_value'] ?? '';
+
+        $this->render('admin/students/print_application', [
+            'student' => $student,
+            'school_name' => $schoolName,
+            'school_address' => $schoolAddress,
+            'school_phone' => $schoolPhone,
+            'school_email' => $schoolEmail,
+            'school_logo' => $schoolLogo
+        ]);
+    }
+
     public function reAdministerStudent($studentId) {
         // Check CSRF token
         $data = json_decode(file_get_contents('php://input'), true);

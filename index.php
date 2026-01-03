@@ -191,6 +191,9 @@ $router->get('/student/resources', 'StudentController@resources');
 $router->get('/student/change-password', 'StudentController@changePassword');
 $router->post('/student/change-password', 'StudentController@updatePassword');
 
+// Admin Student routes
+$router->get('/admin/students/print-application/{id}', 'AdminController@printStudentApplication');
+
 // API routes
 $router->post('/api/v1/auth/login', 'ApiController@login');
 $router->get('/api/v1/students', 'ApiController@getStudents');

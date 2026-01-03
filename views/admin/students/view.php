@@ -36,9 +36,9 @@ ob_start();
         <p class="text-muted mb-0">Complete information for <?php echo $student['first_name'] . ' ' . $student['last_name']; ?></p>
     </div>
     <div>
-        <button onclick="window.print()" class="btn btn-outline-secondary me-2">
-            <i class="fas fa-print me-1"></i>Print Details
-        </button>
+        <a href="/admin/students/print-application/<?php echo $student['id']; ?>" target="_blank" class="btn btn-outline-primary me-2">
+            <i class="fas fa-file-alt me-1"></i>Print Application Form
+        </a>
         <a href="/admin/students/edit/<?php echo $student['id']; ?>" class="btn btn-primary me-2">
             <i class="fas fa-edit me-1"></i>Edit Student
         </a>
