@@ -1414,7 +1414,7 @@ class AdminController extends Controller {
         $studentIds = $data['students'];
         $includePhotos = $data['include_photos'] ?? true;
         $includeSignatures = $data['include_signatures'] ?? true;
-        $cardsPerPage = $data['cards_per_page'] ?? 4;
+        $cardsPerPage = $data['cards_per_page'] ?? 1; // Single card per page
 
         // Get exam details
         $exam = $this->db->selectOne("
@@ -1437,6 +1437,18 @@ class AdminController extends Controller {
             ORDER BY s.first_name, s.last_name
         ", $studentIds);
 
+        // Get exam subjects with dates and times
+        $examSubjects = $this->db->select("
+            SELECT es.*, s.subject_name, s.subject_code
+            FROM exam_subjects es
+            LEFT JOIN subjects s ON es.subject_id = s.id
+            WHERE es.exam_id = ?
+            ORDER BY es.exam_date, es.start_time
+        ", [$examId]);
+
+        // Get important instructions from database
+        $instructions = $this->db->select("SELECT instruction_text FROM admit_card_instructions WHERE is_active = 1 ORDER BY id");
+
         // Get school settings
         $schoolName = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_name'")['setting_value'] ?? 'School Management System';
         $schoolAddress = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_address'")['setting_value'] ?? '';
@@ -1445,6 +1457,8 @@ class AdminController extends Controller {
         $viewData = [
             'exam' => $exam,
             'students' => $students,
+            'examSubjects' => $examSubjects,
+            'instructions' => $instructions,
             'includePhotos' => $includePhotos,
             'includeSignatures' => $includeSignatures,
             'cardsPerPage' => $cardsPerPage,
@@ -1513,6 +1527,18 @@ class AdminController extends Controller {
             $this->json(['success' => false, 'message' => 'Student not found'], 404);
         }
 
+        // Get exam subjects with dates and times
+        $examSubjects = $this->db->select("
+            SELECT es.*, s.subject_name, s.subject_code
+            FROM exam_subjects es
+            LEFT JOIN subjects s ON es.subject_id = s.id
+            WHERE es.exam_id = ?
+            ORDER BY es.exam_date, es.start_time
+        ", [$examId]);
+
+        // Get important instructions from database
+        $instructions = $this->db->select("SELECT instruction_text FROM admit_card_instructions WHERE is_active = 1 ORDER BY id");
+
         // Get school settings
         $schoolName = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_name'")['setting_value'] ?? 'School Management System';
         $schoolAddress = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_address'")['setting_value'] ?? '';
@@ -1521,6 +1547,8 @@ class AdminController extends Controller {
         $viewData = [
             'exam' => $exam,
             'students' => [$student],
+            'examSubjects' => $examSubjects,
+            'instructions' => $instructions,
             'includePhotos' => $includePhotos,
             'includeSignatures' => $includeSignatures,
             'cardsPerPage' => 1,
@@ -1579,6 +1607,18 @@ class AdminController extends Controller {
             $this->redirect('/admin/exams');
         }
 
+        // Get exam subjects with dates and times
+        $examSubjects = $this->db->select("
+            SELECT es.*, s.subject_name, s.subject_code
+            FROM exam_subjects es
+            LEFT JOIN subjects s ON es.subject_id = s.id
+            WHERE es.exam_id = ?
+            ORDER BY es.exam_date, es.start_time
+        ", [$examId]);
+
+        // Get important instructions from database
+        $instructions = $this->db->select("SELECT instruction_text FROM admit_card_instructions WHERE is_active = 1 ORDER BY id");
+
         // Get school settings
         $schoolName = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_name'")['setting_value'] ?? 'School Management System';
         $schoolAddress = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_address'")['setting_value'] ?? '';
@@ -1588,6 +1628,8 @@ class AdminController extends Controller {
         $viewData = [
             'exam' => $exam,
             'students' => [$student],
+            'examSubjects' => $examSubjects,
+            'instructions' => $instructions,
             'includePhotos' => true,
             'includeSignatures' => true,
             'cardsPerPage' => 1,
@@ -1629,6 +1671,18 @@ class AdminController extends Controller {
             $this->redirect('/admin/exams');
         }
 
+        // Get exam subjects with dates and times
+        $examSubjects = $this->db->select("
+            SELECT es.*, s.subject_name, s.subject_code
+            FROM exam_subjects es
+            LEFT JOIN subjects s ON es.subject_id = s.id
+            WHERE es.exam_id = ?
+            ORDER BY es.exam_date, es.start_time
+        ", [$examId]);
+
+        // Get important instructions from database
+        $instructions = $this->db->select("SELECT instruction_text FROM admit_card_instructions WHERE is_active = 1 ORDER BY id");
+
         // Get school settings
         $schoolName = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_name'")['setting_value'] ?? 'School Management System';
         $schoolAddress = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_address'")['setting_value'] ?? '';
@@ -1638,9 +1692,11 @@ class AdminController extends Controller {
         $viewData = [
             'exam' => $exam,
             'students' => $students,
+            'examSubjects' => $examSubjects,
+            'instructions' => $instructions,
             'includePhotos' => true,
             'includeSignatures' => true,
-            'cardsPerPage' => 4, // 4 cards per page for bulk printing
+            'cardsPerPage' => 1, // Single card per page for better timetable display
             'schoolName' => $schoolName,
             'schoolAddress' => $schoolAddress,
             'schoolLogo' => $schoolLogo
