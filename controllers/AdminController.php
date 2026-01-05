@@ -1437,10 +1437,27 @@ class AdminController extends Controller {
             ORDER BY s.first_name, s.last_name
         ", $studentIds);
 
-        // Generate HTML for admit cards
-        $html = $this->generateAdmitCardsHTML($exam, $students, $includePhotos, $includeSignatures, $cardsPerPage);
+        // Get school settings
+        $schoolName = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_name'")['setting_value'] ?? 'School Management System';
+        $schoolAddress = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_address'")['setting_value'] ?? '';
 
-        // For now, return HTML. In production, this would generate PDF
+        // Prepare data for view
+        $viewData = [
+            'exam' => $exam,
+            'students' => $students,
+            'includePhotos' => $includePhotos,
+            'includeSignatures' => $includeSignatures,
+            'cardsPerPage' => $cardsPerPage,
+            'schoolName' => $schoolName,
+            'schoolAddress' => $schoolAddress
+        ];
+
+        // Generate HTML using view
+        extract($viewData);
+        ob_start();
+        include BASE_PATH . 'views/admin/exams/print_admitcard.php';
+        $html = ob_get_clean();
+
         // Save HTML to temporary file and return URL
         $filename = 'admit_cards_' . $examId . '_' . time() . '.html';
         $filepath = BASE_PATH . 'temp/' . $filename;
@@ -1496,8 +1513,26 @@ class AdminController extends Controller {
             $this->json(['success' => false, 'message' => 'Student not found'], 404);
         }
 
-        // Generate HTML for single admit card
-        $html = $this->generateAdmitCardsHTML($exam, [$student], $includePhotos, $includeSignatures, 1);
+        // Get school settings
+        $schoolName = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_name'")['setting_value'] ?? 'School Management System';
+        $schoolAddress = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_address'")['setting_value'] ?? '';
+
+        // Prepare data for view
+        $viewData = [
+            'exam' => $exam,
+            'students' => [$student],
+            'includePhotos' => $includePhotos,
+            'includeSignatures' => $includeSignatures,
+            'cardsPerPage' => 1,
+            'schoolName' => $schoolName,
+            'schoolAddress' => $schoolAddress
+        ];
+
+        // Generate HTML using view
+        extract($viewData);
+        ob_start();
+        include BASE_PATH . 'views/admin/exams/print_admitcard.php';
+        $html = ob_get_clean();
 
         // Save HTML to temporary file
         $filename = 'admit_card_' . $examId . '_' . $studentId . '_' . time() . '.html';
@@ -1515,6 +1550,105 @@ class AdminController extends Controller {
             'html_url' => '/temp/' . $filename,
             'pdf_url' => '/temp/' . $filename
         ]);
+    }
+
+    public function printAdmitCard($examId, $studentId) {
+        // Get exam details
+        $exam = $this->db->selectOne("
+            SELECT e.*, c.class_name, c.section
+            FROM exams e
+            LEFT JOIN classes c ON e.class_id = c.id
+            WHERE e.id = ?
+        ", [$examId]);
+
+        if (!$exam) {
+            $this->session->setFlash('error', 'Exam not found');
+            $this->redirect('/admin/exams');
+        }
+
+        // Get student
+        $student = $this->db->selectOne("
+            SELECT s.*, c.class_name, c.section
+            FROM students s
+            LEFT JOIN classes c ON s.class_id = c.id
+            WHERE s.id = ? AND s.is_active = 1
+        ", [$studentId]);
+
+        if (!$student) {
+            $this->session->setFlash('error', 'Student not found');
+            $this->redirect('/admin/exams');
+        }
+
+        // Get school settings
+        $schoolName = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_name'")['setting_value'] ?? 'School Management System';
+        $schoolAddress = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_address'")['setting_value'] ?? '';
+        $schoolLogo = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_logo'")['setting_value'] ?? '';
+
+        // Prepare data for view
+        $viewData = [
+            'exam' => $exam,
+            'students' => [$student],
+            'includePhotos' => true,
+            'includeSignatures' => true,
+            'cardsPerPage' => 1,
+            'schoolName' => $schoolName,
+            'schoolAddress' => $schoolAddress,
+            'schoolLogo' => $schoolLogo
+        ];
+
+        // Render the view directly
+        extract($viewData);
+        include BASE_PATH . 'views/admin/exams/print_admitcard.php';
+    }
+
+    public function printAdmitCards($examId) {
+        // Get exam details
+        $exam = $this->db->selectOne("
+            SELECT e.*, c.class_name, c.section
+            FROM exams e
+            LEFT JOIN classes c ON e.class_id = c.id
+            WHERE e.id = ?
+        ", [$examId]);
+
+        if (!$exam) {
+            $this->session->setFlash('error', 'Exam not found');
+            $this->redirect('/admin/exams');
+        }
+
+        // Get all students for this exam's class
+        $students = $this->db->select("
+            SELECT s.*, c.class_name, c.section
+            FROM students s
+            LEFT JOIN classes c ON s.class_id = c.id
+            WHERE s.class_id = ? AND s.is_active = 1 AND s.tc_issued = 0
+            ORDER BY s.first_name, s.last_name
+        ", [$exam['class_id']]);
+
+        if (empty($students)) {
+            $this->session->setFlash('error', 'No students found for this exam');
+            $this->redirect('/admin/exams');
+        }
+
+        // Get school settings
+        $schoolName = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_name'")['setting_value'] ?? 'School Management System';
+        $schoolAddress = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_address'")['setting_value'] ?? '';
+        $schoolLogo = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_logo'")['setting_value'] ?? '';
+
+        // Prepare data for view
+        $viewData = [
+            'exam' => $exam,
+            'students' => $students,
+            'includePhotos' => true,
+            'includeSignatures' => true,
+            'cardsPerPage' => 4, // 4 cards per page for bulk printing
+            'schoolName' => $schoolName,
+            'schoolAddress' => $schoolAddress,
+            'schoolLogo' => $schoolLogo
+        ];
+
+        // Render the view directly
+        extract($viewData);
+        include BASE_PATH . 'views/admin/exams/print_admitcard.php';
     }
 
     public function certificates() {
@@ -2221,8 +2355,27 @@ class AdminController extends Controller {
             $this->calculateStudentRankings($students, $examId);
         }
 
-        // Generate HTML for marksheets
-        $html = $this->generateMarksheetsHTML($exam, $students, $includePhotos, $includeGrades, $includeRankings, $marksheetsPerPage);
+        // Get school settings
+        $schoolName = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_name'")['setting_value'] ?? 'School Management System';
+        $schoolAddress = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_address'")['setting_value'] ?? '';
+
+        // Prepare data for view
+        $viewData = [
+            'exam' => $exam,
+            'students' => $students,
+            'includePhotos' => $includePhotos,
+            'includeGrades' => $includeGrades,
+            'includeRankings' => $includeRankings,
+            'marksheetsPerPage' => $marksheetsPerPage,
+            'schoolName' => $schoolName,
+            'schoolAddress' => $schoolAddress
+        ];
+
+        // Generate HTML using view
+        extract($viewData);
+        ob_start();
+        include BASE_PATH . 'views/admin/exams/print_marksheet.php';
+        $html = ob_get_clean();
 
         // Save HTML to temporary file
         $filename = 'marksheets_' . $examId . '_' . time() . '.html';
@@ -2321,8 +2474,27 @@ class AdminController extends Controller {
             }
         }
 
-        // Generate HTML for single marksheet
-        $html = $this->generateMarksheetsHTML($exam, [$student], $includePhotos, $includeGrades, $includeRankings, 1);
+        // Get school settings
+        $schoolName = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_name'")['setting_value'] ?? 'School Management System';
+        $schoolAddress = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_address'")['setting_value'] ?? '';
+
+        // Prepare data for view
+        $viewData = [
+            'exam' => $exam,
+            'students' => [$student],
+            'includePhotos' => $includePhotos,
+            'includeGrades' => $includeGrades,
+            'includeRankings' => $includeRankings,
+            'marksheetsPerPage' => 1,
+            'schoolName' => $schoolName,
+            'schoolAddress' => $schoolAddress
+        ];
+
+        // Generate HTML using view
+        extract($viewData);
+        ob_start();
+        include BASE_PATH . 'views/admin/exams/print_marksheet.php';
+        $html = ob_get_clean();
 
         // Save HTML to temporary file
         $filename = 'marksheet_' . $examId . '_' . $studentId . '_' . time() . '.html';
@@ -2341,6 +2513,144 @@ class AdminController extends Controller {
         ]);
     }
 
+    public function printMarksheet($examId, $studentId) {
+        // Get exam details
+        $exam = $this->db->selectOne("
+            SELECT e.*, c.class_name, c.section
+            FROM exams e
+            LEFT JOIN classes c ON e.class_id = c.id
+            WHERE e.id = ?
+        ", [$examId]);
+
+        if (!$exam) {
+            $this->session->setFlash('error', 'Exam not found');
+            $this->redirect('/admin/exams');
+        }
+
+        // Get student with results
+        $student = $this->db->selectOne("
+            SELECT s.*, c.class_name, c.section
+            FROM students s
+            LEFT JOIN classes c ON s.class_id = c.id
+            WHERE s.id = ? AND s.is_active = 1
+        ", [$studentId]);
+
+        if (!$student) {
+            $this->session->setFlash('error', 'Student not found');
+            $this->redirect('/admin/exams');
+        }
+
+        // Get exam results for this student
+        $results = $this->db->select("
+            SELECT er.*, sub.subject_name, sub.subject_code
+            FROM exam_results er
+            LEFT JOIN subjects sub ON er.subject_id = sub.id
+            WHERE er.exam_id = ? AND er.student_id = ?
+            ORDER BY sub.subject_name
+        ", [$examId, $studentId]);
+
+        $student['results'] = $results;
+
+        // Calculate ranking
+        $allStudents = $this->db->select("
+            SELECT DISTINCT s.id
+            FROM students s
+            INNER JOIN exam_results er ON s.id = er.student_id
+            WHERE er.exam_id = ? AND s.class_id = ? AND s.is_active = 1
+        ", [$examId, $student['class_id']]);
+
+        $studentIds = array_column($allStudents, 'id');
+        $students = [];
+        foreach ($studentIds as $sid) {
+            $s = $this->db->selectOne("SELECT * FROM students WHERE id = ?", [$sid]);
+            $s['results'] = $this->db->select("
+                SELECT er.*, sub.subject_name
+                FROM exam_results er
+                LEFT JOIN subjects sub ON er.subject_id = sub.id
+                WHERE er.exam_id = ? AND er.student_id = ?
+            ", [$examId, $sid]);
+            $students[] = $s;
+        }
+
+        $this->calculateStudentRankings($students, $examId);
+        // Find this student's rank
+        foreach ($students as $s) {
+            if ($s['id'] == $studentId) {
+                $student['rank'] = $s['rank'];
+                break;
+            }
+        }
+
+        // Get school settings
+        $schoolName = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_name'")['setting_value'] ?? 'School Management System';
+        $schoolAddress = $this->db->selectOne("SELECT setting_value FROM settings WHERE setting_key = 'school_address'")['setting_value'] ?? '';
+
+        // Prepare data for view
+        $viewData = [
+            'exam' => $exam,
+            'students' => [$student],
+            'includePhotos' => true,
+            'includeGrades' => true,
+            'includeRankings' => true,
+            'marksheetsPerPage' => 1,
+            'schoolName' => $schoolName,
+            'schoolAddress' => $schoolAddress
+        ];
+
+        // Render the view directly
+        extract($viewData);
+        include BASE_PATH . 'views/admin/exams/print_marksheet.php';
+    }
+
+    public function viewExam($examId) {
+        // Get exam details with class and academic year info
+        $exam = $this->db->selectOne("
+            SELECT e.*, c.class_name, c.section, ay.year_name
+            FROM exams e
+            LEFT JOIN classes c ON e.class_id = c.id
+            LEFT JOIN academic_years ay ON e.academic_year_id = ay.id
+            WHERE e.id = ?
+        ", [$examId]);
+
+        if (!$exam) {
+            $this->session->setFlash('error', 'Exam not found');
+            $this->redirect('/admin/exams');
+        }
+
+        // Get exam subjects
+        $examSubjects = $this->db->select("
+            SELECT es.*, s.subject_name, s.subject_code
+            FROM exam_subjects es
+            LEFT JOIN subjects s ON es.subject_id = s.id
+            WHERE es.exam_id = ?
+            ORDER BY es.exam_date, es.start_time
+        ", [$examId]);
+
+        // Get exam results summary
+        $resultsSummary = $this->db->select("
+            SELECT
+                COUNT(DISTINCT er.student_id) as total_students,
+                COUNT(er.id) as total_results,
+                AVG((er.marks_obtained / er.max_marks) * 100) as avg_percentage,
+                MIN((er.marks_obtained / er.max_marks) * 100) as min_percentage,
+                MAX((er.marks_obtained / er.max_marks) * 100) as max_percentage,
+                COUNT(CASE WHEN er.grade = 'A' THEN 1 END) as a_grades,
+                COUNT(CASE WHEN er.grade = 'B' THEN 1 END) as b_grades,
+                COUNT(CASE WHEN er.grade = 'C' THEN 1 END) as c_grades,
+                COUNT(CASE WHEN er.grade = 'F' THEN 1 END) as f_grades
+            FROM exam_results er
+            WHERE er.exam_id = ?
+        ", [$examId]);
+
+        $csrfToken = $this->csrfToken();
+        $this->render('admin/exams/view', [
+            'exam' => $exam,
+            'exam_subjects' => $examSubjects,
+            'results_summary' => $resultsSummary[0] ?? null,
+            'csrf_token' => $csrfToken
+        ]);
+    }
+
     public function createExam() {
         $academicYearId = $this->getCurrentAcademicYearId();
         $where = "WHERE is_active = 1";
@@ -2351,8 +2661,9 @@ class AdminController extends Controller {
         }
         $classes = $this->db->select("SELECT * FROM classes $where ORDER BY class_name", $params);
         $subjects = $this->db->select("SELECT * FROM subjects WHERE is_active = 1 ORDER BY subject_name");
+        $academicYears = $this->db->select("SELECT * FROM academic_years WHERE is_active = 1 ORDER BY year_name DESC");
         $csrfToken = $this->csrfToken();
-        $this->render('admin/exams/create', ['classes' => $classes, 'subjects' => $subjects, 'csrf_token' => $csrfToken]);
+        $this->render('admin/exams/create', ['classes' => $classes, 'subjects' => $subjects, 'academic_years' => $academicYears, 'csrf_token' => $csrfToken]);
     }
 
     public function storeExam() {
@@ -2385,7 +2696,8 @@ class AdminController extends Controller {
         $this->db->beginTransaction();
 
         try {
-            $academicYearId = $this->getCurrentAcademicYearId();
+            // Use selected academic year or current one as fallback
+            $academicYearId = $data['academic_year_id'] ?? $this->getCurrentAcademicYearId();
 
             // Create exam
             $examData = [
@@ -2394,7 +2706,6 @@ class AdminController extends Controller {
                 'class_id' => $data['class_id'],
                 'start_date' => $data['start_date'],
                 'end_date' => $data['end_date'],
-                'academic_year' => $data['academic_year'] ?? date('Y') . '-' . (date('Y') + 1),
                 'is_active' => isset($data['is_active']) ? 1 : 0
             ];
             if ($academicYearId) {
@@ -3519,7 +3830,7 @@ class AdminController extends Controller {
             case 'performance':
                 $performance = $this->db->select("
                     SELECT s.scholar_number, s.first_name, s.last_name, c.class_name, c.section,
-                           AVG(er.percentage) as avg_percentage,
+                           AVG((er.marks_obtained / er.max_marks) * 100) as avg_percentage,
                            COUNT(CASE WHEN er.grade = 'A' THEN 1 END) as a_grades,
                            COUNT(CASE WHEN er.grade = 'B' THEN 1 END) as b_grades,
                            COUNT(CASE WHEN er.grade = 'C' THEN 1 END) as c_grades,
@@ -3699,7 +4010,8 @@ class AdminController extends Controller {
             case 'exam-results':
                 $results = $this->db->select("
                     SELECT e.exam_name, s.scholar_number, s.first_name, s.last_name, c.class_name,
-                           sub.subject_name, er.marks_obtained, er.max_marks, er.grade, er.percentage
+                           sub.subject_name, er.marks_obtained, er.max_marks, er.grade,
+                           ROUND((er.marks_obtained / er.max_marks) * 100, 2) as percentage
                     FROM exam_results er
                     LEFT JOIN exams e ON er.exam_id = e.id
                     LEFT JOIN students s ON er.student_id = s.id
@@ -3734,9 +4046,9 @@ class AdminController extends Controller {
             case 'academic-performance':
                 $performance = $this->db->select("
                     SELECT sub.subject_name,
-                           AVG(er.percentage) as avg_percentage,
-                           MIN(er.percentage) as min_percentage,
-                           MAX(er.percentage) as max_percentage,
+                           AVG((er.marks_obtained / er.max_marks) * 100) as avg_percentage,
+                           MIN((er.marks_obtained / er.max_marks) * 100) as min_percentage,
+                           MAX((er.marks_obtained / er.max_marks) * 100) as max_percentage,
                            COUNT(CASE WHEN er.grade = 'A' THEN 1 END) as a_count,
                            COUNT(CASE WHEN er.grade = 'B' THEN 1 END) as b_count,
                            COUNT(CASE WHEN er.grade = 'C' THEN 1 END) as c_count,

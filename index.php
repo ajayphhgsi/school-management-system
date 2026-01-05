@@ -100,6 +100,9 @@ $router->get('/admin/exams/admit-cards', 'AdminController@admitCards');
 $router->get('/admin/exams/{id}/students', 'AdminController@getExamStudents');
 $router->post('/admin/exams/generate-admit-cards', 'AdminController@generateAdmitCards');
 $router->post('/admin/exams/generate-admit-card', 'AdminController@generateAdmitCard');
+$router->get('/admin/exams/print-admit-card/{exam_id}/{student_id}', 'AdminController@printAdmitCard');
+$router->get('/admin/exams/print-admit-cards/{exam_id}', 'AdminController@printAdmitCards');
+$router->get('/admin/exams/print-marksheet/{exam_id}/{student_id}', 'AdminController@printMarksheet');
 
 // Certificate Management
 $router->get('/admin/certificates', 'AdminController@certificates');
@@ -116,6 +119,7 @@ $router->get('/admin/certificates/print-tc', 'AdminController@printTC');
 // Marksheet Generation
 $router->get('/admin/exams/create', 'AdminController@createExam');
 $router->post('/admin/exams/store', 'AdminController@storeExam');
+$router->get('/admin/exams/view/{id}', 'AdminController@viewExam');
 $router->get('/admin/exams/{id}/results', 'AdminController@enterResults');
 $router->get('/admin/exams/{id}/existing-results', 'AdminController@getExistingResults');
 $router->post('/admin/exams/save-results', 'AdminController@saveResults');

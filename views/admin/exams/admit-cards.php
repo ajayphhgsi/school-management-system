@@ -301,45 +301,9 @@ function generateBulkAdmitCards() {
         return;
     }
 
-    // Show loading
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating...';
-    btn.disabled = true;
-
-    // AJAX request to generate bulk admit cards
-    fetch('/admin/exams/generate-admit-cards', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': '<?php echo $csrf_token; ?>'
-        },
-        body: JSON.stringify({
-            exam_id: selectedExam.id,
-            students: selectedStudents.map(s => s.id),
-            include_photos: document.getElementById('includePhotos').checked,
-            include_signatures: document.getElementById('includeSignatures').checked,
-            cards_per_page: document.getElementById('cardsPerPage').value
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Open PDF in new tab
-            window.open(data.pdf_url, '_blank');
-            alert('Admit cards generated successfully!');
-        } else {
-            alert('Error generating admit cards: ' + (data.message || 'Unknown error'));
-        }
-    })
-    .catch(error => {
-        console.error('Error generating admit cards:', error);
-        alert('Error generating admit cards. Please try again.');
-    })
-    .finally(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    });
+    // Directly open the bulk print URL
+    const printUrl = `/admin/exams/print-admit-cards/${selectedExam.id}`;
+    window.open(printUrl, '_blank');
 }
 
 function generateIndividualAdmitCard() {
@@ -354,45 +318,12 @@ function generateIndividualAdmitCard() {
         return;
     }
 
-    // Show loading
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>';
-    btn.disabled = true;
+    // Directly open the print URL
+    const printUrl = `/admin/exams/print-admit-card/${selectedExam.id}/${studentId}`;
+    window.open(printUrl, '_blank');
 
-    // AJAX request to generate individual admit card
-    fetch('/admin/exams/generate-admit-card', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': '<?php echo $csrf_token; ?>'
-        },
-        body: JSON.stringify({
-            exam_id: selectedExam.id,
-            student_id: studentId,
-            include_photos: document.getElementById('includePhotos').checked,
-            include_signatures: document.getElementById('includeSignatures').checked
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Open PDF in new tab
-            window.open(data.pdf_url, '_blank');
-            // Update preview
-            updatePreview(studentId);
-        } else {
-            alert('Error generating admit card: ' + (data.message || 'Unknown error'));
-        }
-    })
-    .catch(error => {
-        console.error('Error generating admit card:', error);
-        alert('Error generating admit card. Please try again.');
-    })
-    .finally(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    });
+    // Update preview
+    updatePreview(studentId);
 }
 
 function updatePreview(studentId = null) {

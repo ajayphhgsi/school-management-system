@@ -172,6 +172,7 @@ CREATE TABLE exam_results (
     marks_obtained DECIMAL(5,2),
     max_marks DECIMAL(5,2),
     grade VARCHAR(5),
+    percentage DECIMAL(5,2),
     remarks TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE,
@@ -416,6 +417,9 @@ ALTER TABLE exams ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_yea
 
 -- Add academic_year_id to exam_results
 ALTER TABLE exam_results ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_year_id) REFERENCES academic_years(id);
+
+-- Add percentage column to exam_results
+ALTER TABLE exam_results ADD COLUMN percentage DECIMAL(5,2);
 
 -- Add academic_year_id to events
 ALTER TABLE events ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_year_id) REFERENCES academic_years(id);

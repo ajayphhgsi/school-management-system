@@ -396,45 +396,12 @@ function generateIndividualMarksheet() {
         return;
     }
 
-    // Show loading
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>';
-    btn.disabled = true;
+    // Directly open the print URL
+    const printUrl = `/admin/exams/print-marksheet/${selectedExam.id}/${studentId}`;
+    window.open(printUrl, '_blank');
 
-    // AJAX request to generate individual marksheet
-    fetch('/admin/exams/generate-marksheet', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': '<?php echo $csrf_token; ?>'
-        },
-        body: JSON.stringify({
-            exam_id: selectedExam.id,
-            student_id: studentId,
-            include_photos: document.getElementById('includePhotos').checked,
-            include_grades: document.getElementById('includeGrades').checked,
-            include_rankings: document.getElementById('includeRankings').checked
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            window.open(data.marksheet_url, '_blank');
-            // Update preview
-            updatePreview(studentId);
-        } else {
-            alert('Error generating marksheet: ' + (data.message || 'Unknown error'));
-        }
-    })
-    .catch(error => {
-        console.error('Error generating marksheet:', error);
-        alert('Error generating marksheet. Please try again.');
-    })
-    .finally(() => {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    });
+    // Update preview
+    updatePreview(studentId);
 }
 
 function updatePreview(studentId = null) {

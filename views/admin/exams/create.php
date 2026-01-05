@@ -90,9 +90,16 @@ ob_start();
                 </select>
             </div>
             <div class="col-md-6 mb-3">
-                <label for="academic_year" class="form-label">Academic Year</label>
-                <input type="text" class="form-control" id="academic_year" name="academic_year"
-                       value="<?php echo htmlspecialchars($_SESSION['flash']['old']['academic_year'] ?? date('Y') . '-' . (date('Y') + 1)); ?>">
+                <label for="academic_year_id" class="form-label">Academic Year *</label>
+                <select class="form-select" id="academic_year_id" name="academic_year_id" required>
+                    <option value="">Select Academic Year</option>
+                    <?php foreach ($academic_years as $year): ?>
+                        <option value="<?php echo $year['id']; ?>"
+                                <?php echo ($_SESSION['flash']['old']['academic_year_id'] ?? '') == $year['id'] ? 'selected' : ''; ?>>
+                            <?php echo $year['year_name']; ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
         </div>
 
@@ -303,6 +310,23 @@ document.getElementById('start_date').addEventListener('change', function() {
             input.value = startDate;
         }
     });
+});
+
+// Auto-fill times when first subject time is set
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('start-time') || e.target.classList.contains('end-time')) {
+        const timeType = e.target.classList.contains('start-time') ? 'start-time' : 'end-time';
+        const timeValue = e.target.value;
+
+        if (timeValue) {
+            // Find all other time inputs of the same type that are empty
+            document.querySelectorAll('.' + timeType).forEach(input => {
+                if (!input.value && input !== e.target) {
+                    input.value = timeValue;
+                }
+            });
+        }
+    }
 });
 
 // Load subjects when class changes
