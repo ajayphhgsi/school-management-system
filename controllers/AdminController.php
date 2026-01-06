@@ -61,7 +61,7 @@ class AdminController extends Controller {
                 FROM fee_payments fp
                 LEFT JOIN fees f ON fp.fee_id = f.id
                 WHERE fp.payment_status = 'completed'
-                AND DATE_FORMAT(fp.payment_date, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m') " .
+                AND strftime('%Y-%m', fp.payment_date) = strftime('%Y-%m', 'now') " .
                 ($academicYearId ? " AND f.academic_year_id = ?" : ""),
                 $academicYearId ? [$academicYearId] : []
             )['total'] ?? 0,
@@ -69,7 +69,7 @@ class AdminController extends Controller {
             'overdue_fees' => $this->db->selectOne("
                 SELECT SUM(amount) as total
                 FROM fees
-                WHERE is_paid = 0 AND due_date < CURDATE() " . ($academicYearId ? " AND academic_year_id = ?" : ""),
+                WHERE is_paid = 0 AND due_date < date('now') " . ($academicYearId ? " AND academic_year_id = ?" : ""),
                 $academicYearId ? [$academicYearId] : []
             )['total'] ?? 0,
         ];
@@ -95,7 +95,7 @@ class AdminController extends Controller {
         // Recent activities and data
         $recentData = [
             'recent_students' => $this->db->select("SELECT s.* FROM students s LEFT JOIN classes c ON s.class_id = c.id $studentWhere ORDER BY s.created_at DESC LIMIT 6", $academicYearId ? [$academicYearId] : []),
-            'upcoming_events' => $this->db->select("SELECT * FROM events WHERE event_date >= CURDATE() AND is_active = 1" . ($academicYearId ? " AND academic_year_id = ?" : "") . " ORDER BY event_date LIMIT 5", $academicYearId ? [$academicYearId] : []),
+            'upcoming_events' => $this->db->select("SELECT * FROM events WHERE event_date >= date('now') AND is_active = 1" . ($academicYearId ? " AND academic_year_id = ?" : "") . " ORDER BY event_date LIMIT 5", $academicYearId ? [$academicYearId] : []),
             'recent_payments' => $this->db->select("
                 SELECT fp.*, s.first_name, s.last_name, s.scholar_number
                 FROM fee_payments fp
@@ -118,7 +118,7 @@ class AdminController extends Controller {
             'overdue_fees_count' => $this->db->selectOne("
                 SELECT COUNT(*) as count
                 FROM fees
-                WHERE is_paid = 0 AND due_date < CURDATE() " . ($academicYearId ? " AND academic_year_id = ?" : ""),
+                WHERE is_paid = 0 AND due_date < date('now') " . ($academicYearId ? " AND academic_year_id = ?" : ""),
                 $academicYearId ? [$academicYearId] : []
             )['count'] ?? 0,
 
@@ -136,10 +136,10 @@ class AdminController extends Controller {
             ),
 
             'upcoming_deadlines' => $this->db->select("
-                SELECT 'fee_due' as type, CONCAT('Fee due for ', COUNT(*), ' students') as message,
+                SELECT 'fee_due' as type, ('Fee due for ' || COUNT(*) || ' students') as message,
                        MIN(due_date) as due_date, COUNT(*) as count
                 FROM fees
-                WHERE is_paid = 0 AND due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) " .
+                WHERE is_paid = 0 AND due_date BETWEEN date('now') AND date('now', '+7 days') " .
                 ($academicYearId ? " AND academic_year_id = ?" : "") . "
                 GROUP BY due_date
                 ORDER BY due_date LIMIT 3",
@@ -152,13 +152,13 @@ class AdminController extends Controller {
         if ($academicYearId) {
             // Monthly fee collection trends (last 12 months)
             $chartData['fee_collection'] = $this->db->select("
-                SELECT DATE_FORMAT(fp.payment_date, '%Y-%m') as month,
+                SELECT strftime('%Y-%m', fp.payment_date) as month,
                        SUM(fp.amount_paid) as total,
                        COUNT(fp.id) as transactions
                 FROM fee_payments fp
                 JOIN fees f ON fp.fee_id = f.id
-                WHERE f.academic_year_id = ? AND fp.payment_date >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-                GROUP BY DATE_FORMAT(fp.payment_date, '%Y-%m')
+                WHERE f.academic_year_id = ? AND fp.payment_date >= date('now', '-12 months')
+                GROUP BY strftime('%Y-%m', fp.payment_date)
                 ORDER BY month
             ", [$academicYearId]);
 
@@ -166,41 +166,41 @@ class AdminController extends Controller {
             $chartData['expense_breakdown'] = $this->db->select("
                 SELECT category, SUM(amount) as total, COUNT(*) as transactions
                 FROM expenses
-                WHERE academic_year_id = ? AND expense_date >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+                WHERE academic_year_id = ? AND expense_date >= date('now', '-12 months')
                 GROUP BY category
                 ORDER BY total DESC
             ", [$academicYearId]);
 
             // Student enrollment growth over time
             $chartData['enrollment_growth'] = $this->db->select("
-                SELECT DATE_FORMAT(s.created_at, '%Y-%m') as month, COUNT(*) as count
+                SELECT strftime('%Y-%m', s.created_at) as month, COUNT(*) as count
                 FROM students s
                 JOIN classes c ON s.class_id = c.id
-                WHERE c.academic_year_id = ? AND s.created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-                GROUP BY DATE_FORMAT(s.created_at, '%Y-%m')
+                WHERE c.academic_year_id = ? AND s.created_at >= date('now', '-12 months')
+                GROUP BY strftime('%Y-%m', s.created_at)
                 ORDER BY month
             ", [$academicYearId]);
 
             // Attendance statistics with trends
             $chartData['attendance_stats'] = $this->db->select("
-                SELECT DATE_FORMAT(attendance_date, '%Y-%m') as month,
+                SELECT strftime('%Y-%m', attendance_date) as month,
                        AVG(CASE WHEN status = 'present' THEN 1 ELSE 0 END) * 100 as rate,
                        COUNT(CASE WHEN status = 'present' THEN 1 END) as present_count,
                        COUNT(CASE WHEN status = 'absent' THEN 1 END) as absent_count
                 FROM attendance
-                WHERE academic_year_id = ? AND attendance_date >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-                GROUP BY DATE_FORMAT(attendance_date, '%Y-%m')
+                WHERE academic_year_id = ? AND attendance_date >= date('now', '-12 months')
+                GROUP BY strftime('%Y-%m', attendance_date)
                 ORDER BY month
             ", [$academicYearId]);
 
             // Academic performance trends
             $chartData['academic_performance'] = $this->db->select("
-                SELECT DATE_FORMAT(er.created_at, '%Y-%m') as month,
+                SELECT strftime('%Y-%m', er.created_at) as month,
                        AVG(CASE WHEN er.grade = 'A' THEN 4 WHEN er.grade = 'B' THEN 3 WHEN er.grade = 'C' THEN 2 WHEN er.grade = 'D' THEN 1 ELSE 0 END) as avg_grade,
                        (SUM(CASE WHEN er.grade != 'F' THEN 1 ELSE 0 END) / COUNT(*)) * 100 as pass_rate
                 FROM exam_results er
-                WHERE er.academic_year_id = ? AND er.created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-                GROUP BY DATE_FORMAT(er.created_at, '%Y-%m')
+                WHERE er.academic_year_id = ? AND er.created_at >= date('now', '-12 months')
+                GROUP BY strftime('%Y-%m', er.created_at)
                 ORDER BY month
             ", [$academicYearId]);
         }
@@ -3891,13 +3891,13 @@ $this->render('admin/classes/edit', ['class' => $class, 'subjects' => $subjects,
 
         // Month filter
         if (!empty($_GET['month'])) {
-            $conditions[] = "DATE_FORMAT(f.due_date, '%Y-%m') = ?";
+            $conditions[] = "strftime('%Y-%m', f.due_date) = ?";
             $params[] = $_GET['month'];
         }
 
         // Year filter
         if (!empty($_GET['year'])) {
-            $conditions[] = "DATE_FORMAT(f.due_date, '%Y') = ?";
+            $conditions[] = "strftime('%Y', f.due_date) = ?";
             $params[] = $_GET['year'];
         }
 
