@@ -62,9 +62,18 @@ ob_start();
     <div class="col-md-3 mb-3">
         <div class="card text-center h-100">
             <div class="card-body">
-                <i class="fas fa-file-alt fa-2x text-warning mb-3"></i>
+                <i class="fas fa-edit fa-2x text-warning mb-3"></i>
+                <h6 class="card-title">Marks Entry</h6>
+                <a href="/admin/exams/marks-entry" class="btn btn-warning btn-sm">Enter Marks</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="fas fa-file-alt fa-2x text-secondary mb-3"></i>
                 <h6 class="card-title">Marksheets</h6>
-                <a href="/admin/exams/marksheets" class="btn btn-warning btn-sm">Generate</a>
+                <a href="/admin/exams/marksheets" class="btn btn-secondary btn-sm">Generate</a>
             </div>
         </div>
     </div>

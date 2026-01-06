@@ -69,6 +69,41 @@ ob_start();
                 </div>
             </div>
 
+            <!-- Subject Assignment -->
+            <div class="mb-4">
+                <h5 class="mb-3">Assign Subjects</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Available Subjects</label>
+                        <select multiple class="form-select" id="available_subjects" size="8">
+                            <?php foreach ($subjects as $subject): ?>
+                                <?php if (!$subject['assigned']): ?>
+                                    <option value="<?php echo $subject['id']; ?>"><?php echo htmlspecialchars($subject['subject_name'] . ' (' . $subject['subject_code'] . ')'); ?></option>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Assigned Subjects</label>
+                        <select multiple class="form-select" id="assigned_subjects" name="assigned_subjects[]" size="8">
+                            <?php foreach ($subjects as $subject): ?>
+                                <?php if ($subject['assigned']): ?>
+                                    <option value="<?php echo $subject['id']; ?>" selected><?php echo htmlspecialchars($subject['subject_name'] . ' (' . $subject['subject_code'] . ')'); ?></option>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button type="button" class="btn btn-success btn-sm me-2" onclick="assignSubjects()">
+                        <i class="fas fa-arrow-right me-1"></i>Assign
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="unassignSubjects()">
+                        <i class="fas fa-arrow-left me-1"></i>Unassign
+                    </button>
+                </div>
+            </div>
+
             <div class="d-flex justify-content-end">
                 <a href="/admin/classes" class="btn btn-secondary me-2">Cancel</a>
                 <button type="submit" class="btn btn-primary">Update Class</button>
@@ -76,6 +111,54 @@ ob_start();
         </form>
     </div>
 </div>
+
+<script>
+function assignSubjects() {
+    const available = document.getElementById('available_subjects');
+    const assigned = document.getElementById('assigned_subjects');
+
+    // Move selected options from available to assigned
+    Array.from(available.selectedOptions).forEach(option => {
+        assigned.appendChild(option);
+        option.selected = true; // Keep selected for form submission
+    });
+}
+
+function unassignSubjects() {
+    const available = document.getElementById('available_subjects');
+    const assigned = document.getElementById('assigned_subjects');
+
+    // Move selected options from assigned to available
+    Array.from(assigned.selectedOptions).forEach(option => {
+        available.appendChild(option);
+        option.selected = false; // Remove from selection
+    });
+    adjustSelectSizes();
+}
+
+// Double-click to assign/unassign
+document.getElementById('available_subjects').addEventListener('dblclick', assignSubjects);
+document.getElementById('assigned_subjects').addEventListener('dblclick', unassignSubjects);
+
+// Auto-select all assigned subjects before form submission
+document.querySelector('form').addEventListener('submit', function() {
+    const assigned = document.getElementById('assigned_subjects');
+    Array.from(assigned.options).forEach(option => {
+        option.selected = true;
+    });
+});
+
+function adjustSelectSizes() {
+    const available = document.getElementById('available_subjects');
+    const assigned = document.getElementById('assigned_subjects');
+    const maxSize = Math.max(available.options.length, assigned.options.length);
+    const size = Math.max(5, Math.min(maxSize, 10));
+    available.size = size;
+    assigned.size = size;
+}
+
+window.addEventListener('load', adjustSelectSizes);
+</script>
 
 <?php
 unset($_SESSION['flash']['old'], $_SESSION['flash']['errors']);

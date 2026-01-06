@@ -164,6 +164,7 @@ ob_start();
                                         <div>
                                             <div><?php echo $student['first_name'] . ' ' . $student['last_name']; ?></div>
                                             <small class="text-muted"><?php echo $student['scholar_number']; ?></small>
+                                            <small class="text-muted">Father: <?php echo $student['father_name'] ?? 'N/A'; ?></small>
                                         </div>
                                     </div>
                                 </td>
@@ -199,6 +200,9 @@ ob_start();
                     <button class="btn btn-outline-primary me-2" onclick="loadExistingResults()">
                         <i class="fas fa-download me-1"></i>Load Existing Results
                     </button>
+                    <button class="btn btn-outline-info me-2" onclick="showExcelImport()">
+                        <i class="fas fa-file-excel me-1"></i>Import from Excel
+                    </button>
                     <button class="btn btn-outline-warning" onclick="clearAllResults()">
                         <i class="fas fa-eraser me-1"></i>Clear All
                     </button>
@@ -207,6 +211,42 @@ ob_start();
                     <button class="btn btn-success btn-lg" onclick="saveAllResults()">
                         <i class="fas fa-save me-2"></i>Save All Results
                     </button>
+                </div>
+            </div>
+
+            <!-- Excel Import Modal -->
+            <div class="modal fade" id="excelImportModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Import Marks from Excel</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="excelImportForm" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label for="excelFile" class="form-label">Select Excel File</label>
+                                    <input type="file" class="form-control" id="excelFile" name="excel_file" accept=".xlsx,.xls,.csv" required>
+                                    <div class="form-text">
+                                        Supported formats: .xlsx, .xls, .csv<br>
+                                        Format: Scholar Number, Subject Name, Marks
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="overwriteExisting" name="overwrite_existing">
+                                        <label class="form-check-label" for="overwriteExisting">
+                                            Overwrite existing marks
+                                        </label>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="importFromExcel()">Import</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -413,6 +453,60 @@ function clearAllResults() {
         });
         updateAllCalculations();
     }
+}
+
+// Show Excel import modal
+function showExcelImport() {
+    document.getElementById('excelImportModal').classList.add('show');
+    document.getElementById('excelImportModal').style.display = 'block';
+    document.body.classList.add('modal-open');
+}
+
+// Import from Excel
+function importFromExcel() {
+    const form = document.getElementById('excelImportForm');
+    const formData = new FormData(form);
+
+    if (!formData.get('excel_file')) {
+        alert('Please select an Excel file');
+        return;
+    }
+
+    // Show loading
+    const importBtn = event.target;
+    const originalText = importBtn.innerHTML;
+    importBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Importing...';
+    importBtn.disabled = true;
+
+    formData.append('exam_id', examData.examId);
+    formData.append('_token', '<?php echo $csrf_token; ?>');
+
+    fetch('/admin/exams/import-marks-excel', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Marks imported successfully! ' + (data.message || ''));
+            // Close modal
+            document.getElementById('excelImportModal').classList.remove('show');
+            document.getElementById('excelImportModal').style.display = 'none';
+            document.body.classList.remove('modal-open');
+            // Reload existing results
+            loadExistingResults();
+        } else {
+            alert('Import failed: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error importing Excel:', error);
+        alert('Error importing Excel file. Please try again.');
+    })
+    .finally(() => {
+        importBtn.innerHTML = originalText;
+        importBtn.disabled = false;
+    });
 }
 
 // Event listeners

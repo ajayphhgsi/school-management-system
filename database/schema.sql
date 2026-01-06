@@ -4,13 +4,21 @@
 CREATE DATABASE IF NOT EXISTS school_management CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE school_management;
 
+-- User roles and permissions
+CREATE TABLE user_roles (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    role_name VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Users table
 CREATE TABLE users (
     id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    role ENUM('superadmin', 'admin', 'student') NOT NULL DEFAULT 'student',
+    role_id INT NOT NULL,
     first_name VARCHAR(50),
     last_name VARCHAR(50),
     phone VARCHAR(20),
@@ -21,15 +29,8 @@ CREATE TABLE users (
     is_active BOOLEAN DEFAULT TRUE,
     last_login DATETIME,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- User roles and permissions
-CREATE TABLE user_roles (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    role_name VARCHAR(50) UNIQUE NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (role_id) REFERENCES user_roles(id)
 );
 
 -- Permissions table
@@ -54,7 +55,6 @@ CREATE TABLE classes (
     id INT PRIMARY KEY AUTO_INCREMENT,
     class_name VARCHAR(50) NOT NULL,
     section VARCHAR(10),
-    academic_year VARCHAR(20),
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -132,71 +132,48 @@ CREATE TABLE attendance (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
     FOREIGN KEY (class_id) REFERENCES classes(id),
-    FOREIGN KEY (marked_by) REFERENCES users(id)
+    FOREIGN KEY (marked_by) REFERENCES users(id),
+    UNIQUE KEY unique_attendance (student_id, attendance_date)
 );
 
--- Exams table
-CREATE TABLE exams (
+-- Grading scales table
+CREATE TABLE grading_scales (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    exam_name VARCHAR(100) NOT NULL,
-    exam_type ENUM('mid-term', 'final', 'custom') DEFAULT 'custom',
-    class_id INT,
+    grade_name VARCHAR(5) NOT NULL, -- 'A+', 'A', 'B'
+    min_percentage DECIMAL(5,2),    -- 90.00
+    max_percentage DECIMAL(5,2),    -- 100.00
+    grade_point DECIMAL(4,2),       -- 10.0 (For CGPA calculations)
+    description VARCHAR(100)        -- 'Outstanding'
+);
+
+-- Academic years table
+CREATE TABLE academic_years (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    year_name VARCHAR(20) UNIQUE NOT NULL,
     start_date DATE,
     end_date DATE,
     is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (class_id) REFERENCES classes(id)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Exam subjects table (for scheduling subjects within exams)
-CREATE TABLE exam_subjects (
+-- Fee structures table
+CREATE TABLE fee_structures (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    exam_id INT,
-    subject_id INT,
-    exam_date DATE,
-    exam_day VARCHAR(20),
-    start_time TIME,
-    end_time TIME,
-    max_marks DECIMAL(5,2),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE,
-    FOREIGN KEY (subject_id) REFERENCES subjects(id)
-);
-
--- Exam results table
-CREATE TABLE exam_results (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    exam_id INT,
-    student_id INT,
-    subject_id INT,
-    marks_obtained DECIMAL(5,2),
-    max_marks DECIMAL(5,2),
-    grade VARCHAR(5),
-    percentage DECIMAL(5,2),
-    remarks TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE,
-    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-    FOREIGN KEY (subject_id) REFERENCES subjects(id)
-);
-
--- Fees table
-CREATE TABLE fees (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    student_id INT,
-    fee_type VARCHAR(100),
+    class_id INT,
+    fee_head_name VARCHAR(100), -- e.g. "Tuition Fee", "Bus Fee"
     amount DECIMAL(10,2),
+    academic_year_id INT,
     due_date DATE,
-    academic_year VARCHAR(20),
-    is_paid BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+    FOREIGN KEY (class_id) REFERENCES classes(id),
+    FOREIGN KEY (academic_year_id) REFERENCES academic_years(id)
 );
 
--- Fee payments table
-CREATE TABLE fee_payments (
+-- Student fee collections table
+CREATE TABLE student_fee_collections (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    fee_id INT,
+    student_id INT,
+    fee_structure_id INT,
     amount_paid DECIMAL(10,2),
     payment_date DATE,
     payment_mode ENUM('cash', 'online', 'cheque', 'upi'),
@@ -208,7 +185,8 @@ CREATE TABLE fee_payments (
     remarks TEXT,
     collected_by INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (fee_id) REFERENCES fees(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY (fee_structure_id) REFERENCES fee_structures(id) ON DELETE CASCADE,
     FOREIGN KEY (collected_by) REFERENCES users(id)
 );
 
@@ -341,6 +319,32 @@ CREATE TABLE audit_logs (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- Books table
+CREATE TABLE books (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    isbn VARCHAR(20),
+    author VARCHAR(100),
+    quantity INT DEFAULT 1,
+    shelf_number VARCHAR(20),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Book issues table
+CREATE TABLE book_issues (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    book_id INT,
+    user_id INT, -- Can be student or teacher
+    issue_date DATE,
+    due_date DATE,
+    return_date DATE,
+    fine_amount DECIMAL(10,2) DEFAULT 0.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (book_id) REFERENCES books(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 -- Insert default data
 INSERT INTO user_roles (role_name, description) VALUES
 ('admin', 'Administrator with full access'),
@@ -362,8 +366,8 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES
 (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9), (1, 10);
 
 -- Insert default admin user (password: admin123)
-INSERT INTO users (username, email, password, role, first_name, last_name) VALUES
-('admin', 'admin@school.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'System', 'Administrator');
+INSERT INTO users (username, email, password, role_id, first_name, last_name) VALUES
+('admin', 'admin@school.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 1, 'System', 'Administrator');
 
 -- Insert sample settings
 INSERT INTO settings (setting_key, setting_value, setting_type) VALUES
@@ -384,27 +388,73 @@ INSERT INTO permissions (permission_name, description) VALUES ('manage_academic_
 -- Assign all permissions to superadmin
 INSERT INTO role_permissions (role_id, permission_id) SELECT (SELECT id FROM user_roles WHERE role_name = 'superadmin'), id FROM permissions;
 
--- Create academic_years table
-CREATE TABLE academic_years (
+-- Student optional subjects table
+CREATE TABLE student_optional_subjects (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    year_name VARCHAR(20) UNIQUE NOT NULL,
+    student_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    academic_year_id INT,
+    FOREIGN KEY (student_id) REFERENCES students(id),
+    FOREIGN KEY (subject_id) REFERENCES subjects(id),
+    FOREIGN KEY (academic_year_id) REFERENCES academic_years(id)
+);
+
+-- Exam types table (replaces exams for better hierarchy)
+CREATE TABLE exam_types (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL, -- e.g., "Half Yearly Examination 2025-26"
+    exam_type ENUM('mid-term', 'final', 'custom') DEFAULT 'custom',
+    academic_year_id INT,
     start_date DATE,
     end_date DATE,
     is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    is_published TINYINT(1) DEFAULT 0, -- Controls if students can see results
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (academic_year_id) REFERENCES academic_years(id)
 );
 
--- Alter users table to include superadmin in role enum
-ALTER TABLE users MODIFY COLUMN role ENUM('superadmin', 'admin', 'student') NOT NULL DEFAULT 'student';
+-- Exam subjects table (now exam schedules linking exam types to classes and subjects)
+CREATE TABLE exam_subjects (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    exam_type_id INT,
+    subject_id INT,
+    class_id INT NOT NULL,
+    exam_date DATE,
+    exam_day VARCHAR(20),
+    start_time TIME,
+    end_time TIME,
+    max_marks DECIMAL(5,2),
+    pass_marks DECIMAL(5,2) DEFAULT 33.00,
+    max_marks_theory DECIMAL(5,2) DEFAULT 0,
+    max_marks_practical DECIMAL(5,2) DEFAULT 0,
+    pass_marks_theory DECIMAL(5,2) DEFAULT 0,
+    pass_marks_practical DECIMAL(5,2) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (exam_type_id) REFERENCES exam_types(id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES subjects(id),
+    FOREIGN KEY (class_id) REFERENCES classes(id)
+);
 
--- Update default admin to admin
-UPDATE users SET role = 'admin' WHERE username = 'admin';
+CREATE INDEX idx_exam_subjects_class_id ON exam_subjects(class_id);
+
+-- Exam results table
+CREATE TABLE exam_results (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    exam_type_id INT,
+    student_id INT,
+    subject_id INT,
+    marks_obtained DECIMAL(5,2),
+    percentage DECIMAL(5,2),
+    remarks TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (exam_type_id) REFERENCES exam_types(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES subjects(id)
+);
+
 
 -- Add academic_year_id to classes
 ALTER TABLE classes ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_year_id) REFERENCES academic_years(id);
-
--- Add academic_year_id to fees
-ALTER TABLE fees ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_year_id) REFERENCES academic_years(id);
 
 -- Add academic_year_id to expenses
 ALTER TABLE expenses ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_year_id) REFERENCES academic_years(id);
@@ -412,14 +462,8 @@ ALTER TABLE expenses ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_
 -- Add academic_year_id to attendance
 ALTER TABLE attendance ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_year_id) REFERENCES academic_years(id);
 
--- Add academic_year_id to exams
-ALTER TABLE exams ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_year_id) REFERENCES academic_years(id);
-
 -- Add academic_year_id to exam_results
 ALTER TABLE exam_results ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_year_id) REFERENCES academic_years(id);
-
--- Add percentage column to exam_results
-ALTER TABLE exam_results ADD COLUMN percentage DECIMAL(5,2);
 
 -- Add academic_year_id to events
 ALTER TABLE events ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_year_id) REFERENCES academic_years(id);

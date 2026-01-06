@@ -76,12 +76,12 @@ ob_start();
                 <?php if (!empty($exams)): ?>
                     <div class="list-group">
                         <?php foreach ($exams as $exam): ?>
-                            <div class="list-group-item exam-card" onclick="selectExam(<?php echo $exam['id']; ?>, '<?php echo addslashes($exam['exam_name']); ?>', '<?php echo addslashes($exam['class_name']); ?>')">
+                            <div class="list-group-item exam-card" onclick="selectExam(<?php echo $exam['id']; ?>, '<?php echo addslashes($exam['exam_name'] ?? ''); ?>', '<?php echo addslashes($exam['class_names'] ?? ''); ?>')">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
-                                        <h6 class="mb-1"><?php echo $exam['exam_name']; ?></h6>
-                                        <p class="mb-1 text-muted small"><?php echo $exam['class_name']; ?> • <?php echo ucfirst($exam['exam_type']); ?></p>
-                                        <small class="text-muted"><?php echo date('M d, Y', strtotime($exam['start_date'])); ?> - <?php echo date('M d, Y', strtotime($exam['end_date'])); ?></small>
+                                        <h6 class="mb-1"><?php echo htmlspecialchars($exam['exam_name'] ?? ''); ?></h6>
+                                        <p class="mb-1 text-muted small"><?php echo htmlspecialchars($exam['class_names'] ?? ''); ?> • <?php echo ucfirst($exam['exam_type'] ?? ''); ?></p>
+                                        <small class="text-muted"><?php echo date('M d, Y', strtotime($exam['start_date'] ?? '')); ?> - <?php echo date('M d, Y', strtotime($exam['end_date'] ?? '')); ?></small>
                                     </div>
                                     <div class="text-end">
                                         <span class="badge bg-<?php echo (strtotime($exam['start_date']) <= time() && strtotime($exam['end_date']) >= time()) ? 'success' : 'secondary'; ?>">
@@ -113,33 +113,31 @@ ob_start();
             <div class="card-body">
                 <div class="generation-options">
                     <div class="row">
-                        <div class="col-md-6">
-                            <h6>Selected Exam: <span id="selectedExamName" class="text-primary"></span></h6>
-                            <p class="mb-1">Class: <span id="selectedExamClass"></span></p>
-                            <p class="mb-0">Students: <span id="studentCount">0</span></p>
+                            <div class="col-md-6">
+                                <h6>Selected Exam: <span id="selectedExamName" class="text-primary"></span></h6>
+                                <div class="mb-2" id="classSelectionContainer">
+                                    <label for="selectedClass" class="form-label small">Select Class:</label>
+                                    <select class="form-select form-select-sm" id="selectedClass">
+                                        <option value="">All Classes</option>
+                                    </select>
+                                </div>
+                                <p class="mb-0">Students: <span id="studentCount">0</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="includePhotos" checked>
+                                    <label class="form-check-label" for="includePhotos">
+                                        Include Student Photos
+                                    </label>
+                                </div>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="includeSignatures" checked>
+                                    <label class="form-check-label" for="includeSignatures">
+                                        Include Signature Areas
+                                    </label>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="includePhotos" checked>
-                                <label class="form-check-label" for="includePhotos">
-                                    Include Student Photos
-                                </label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="checkbox" id="includeSignatures" checked>
-                                <label class="form-check-label" for="includeSignatures">
-                                    Include Signature Areas
-                                </label>
-                            </div>
-                            <div class="mb-2">
-                                <label for="cardsPerPage" class="form-label small">Cards per A4 page:</label>
-                                <select class="form-select form-select-sm" id="cardsPerPage">
-                                    <option value="2">2 cards</option>
-                                    <option value="4" selected>4 cards</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <hr>
@@ -256,19 +254,53 @@ function selectExam(examId, examName, examClass) {
     event.currentTarget.classList.add('selected');
 
     document.getElementById('selectedExamName').textContent = examName;
-    document.getElementById('selectedExamClass').textContent = examClass;
     document.getElementById('generationOptions').classList.remove('d-none');
 
-    // Load students for this exam
-    loadStudentsForExam(examId);
+    // Load classes and students for this exam
+    loadClassesForExam(examId);
 }
 
-function loadStudentsForExam(examId) {
+function loadClassesForExam(examId) {
     // Show loading
     document.getElementById('studentCount').textContent = 'Loading...';
 
+    // AJAX request to get classes for this exam
+    fetch(`/admin/exams/${examId}/classes`)
+        .then(response => response.json())
+        .then(data => {
+            const classes = data.classes || [];
+            const classDropdown = document.getElementById('selectedClass');
+
+            // Always populate class dropdown
+            classDropdown.innerHTML = '<option value="">All Classes</option>';
+            classes.forEach(cls => {
+                const option = document.createElement('option');
+                option.value = cls.id;
+                option.textContent = `${cls.class_name} ${cls.section}`;
+                classDropdown.appendChild(option);
+            });
+
+            // Load students for the exam (all classes initially)
+            loadStudentsForExam(examId, '');
+        })
+        .catch(error => {
+            console.error('Error loading classes:', error);
+            document.getElementById('studentCount').textContent = 'Error';
+        });
+}
+
+function loadStudentsForExam(examId, classId = '') {
+    // Show loading
+    document.getElementById('studentCount').textContent = 'Loading...';
+
+    // Build URL with optional class filter
+    let url = `/admin/exams/${examId}/students`;
+    if (classId) {
+        url += `?class_id=${classId}`;
+    }
+
     // AJAX request to get students
-    fetch(`/admin/exams/${examId}/students`)
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             selectedStudents = data.students || [];
@@ -325,6 +357,14 @@ function generateIndividualAdmitCard() {
     // Update preview
     updatePreview(studentId);
 }
+
+// Handle class selection change
+document.getElementById('selectedClass').addEventListener('change', function() {
+    const classId = this.value;
+    if (selectedExam) {
+        loadStudentsForExam(selectedExam.id, classId);
+    }
+});
 
 function updatePreview(studentId = null) {
     if (!selectedExam) return;

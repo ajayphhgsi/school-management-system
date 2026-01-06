@@ -78,16 +78,16 @@ ob_start();
 
         <div class="row">
             <div class="col-md-6 mb-3">
-                <label for="class_id" class="form-label">Class *</label>
-                <select class="form-select" id="class_id" name="class_id" required>
-                    <option value="">Select Class</option>
+                <label for="class_ids" class="form-label">Classes *</label>
+                <select class="form-select" id="class_ids" name="class_ids[]" multiple required>
                     <?php foreach ($classes as $class): ?>
                         <option value="<?php echo $class['id']; ?>"
-                                <?php echo ($_SESSION['flash']['old']['class_id'] ?? '') == $class['id'] ? 'selected' : ''; ?>>
+                                <?php echo in_array($class['id'], $_SESSION['flash']['old']['class_ids'] ?? []) ? 'selected' : ''; ?>>
                             <?php echo $class['class_name'] . ' ' . $class['section']; ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
+                <div class="form-text">Hold Ctrl (or Cmd on Mac) to select multiple classes</div>
             </div>
             <div class="col-md-6 mb-3">
                 <label for="academic_year_id" class="form-label">Academic Year *</label>
@@ -129,20 +129,15 @@ ob_start();
 
     <!-- Subject Scheduling -->
     <div class="exam-section">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="mb-0"><i class="fas fa-calendar-alt text-success me-2"></i>Subject Scheduling</h5>
-            <button type="button" class="btn btn-success btn-sm" onclick="addSubject()">
-                <i class="fas fa-plus me-1"></i>Add Subject
-            </button>
-        </div>
+        <h5 class="mb-3"><i class="fas fa-calendar-alt text-success me-2"></i>Subject Scheduling</h5>
 
-        <div id="subjectsContainer">
-            <!-- Subject rows will be added here -->
+        <div id="subjectScheduling">
+            <p class="text-muted">Select classes to configure subject scheduling.</p>
         </div>
 
         <div class="text-muted small mt-3">
             <i class="fas fa-info-circle me-1"></i>
-            Add subjects for this exam with their respective dates, times, and maximum marks.
+            Configure exam dates and times for each selected class. Subjects are automatically assigned based on class assignments.
         </div>
     </div>
 
@@ -174,6 +169,7 @@ ob_start();
                         <option value="<?php echo $subject['id']; ?>"><?php echo $subject['subject_name']; ?> (<?php echo $subject['subject_code']; ?>)</option>
                     <?php endforeach; ?>
                 </select>
+                <input type="hidden" name="subjects[][class_id]" value="">
             </div>
             <div class="col-md-2 mb-2">
                 <label class="form-label">Exam Date *</label>
@@ -237,14 +233,15 @@ function removeSubject(button) {
 function previewExam() {
     const examName = document.getElementById('exam_name').value;
     const examType = document.getElementById('exam_type').value;
-    const classSelect = document.getElementById('class_id');
-    const className = classSelect.options[classSelect.selectedIndex]?.text || '';
+    const classSelect = document.getElementById('class_ids');
+    const selectedOptions = Array.from(classSelect.selectedOptions);
+    const classNames = selectedOptions.map(option => option.text).join(', ') || 'Not set';
     const startDate = document.getElementById('start_date').value;
     const endDate = document.getElementById('end_date').value;
 
     let previewText = `Exam: ${examName || 'Not set'}\n`;
     previewText += `Type: ${examType || 'Not set'}\n`;
-    previewText += `Class: ${className || 'Not set'}\n`;
+    previewText += `Classes: ${classNames}\n`;
     previewText += `Duration: ${startDate || 'Not set'} to ${endDate || 'Not set'}\n\n`;
 
     const subjectRows = document.querySelectorAll('.subject-row');
@@ -329,18 +326,125 @@ document.addEventListener('input', function(e) {
     }
 });
 
-// Load subjects when class changes
-document.getElementById('class_id').addEventListener('change', function() {
-    const classId = this.value;
-    if (classId) {
-        loadClassSubjects(classId);
+// Load subjects when classes change
+document.getElementById('class_ids').addEventListener('change', function() {
+    const selectedClasses = Array.from(this.selectedOptions).map(option => option.value);
+    if (selectedClasses.length > 0) {
+        loadClassSubjects(selectedClasses);
     }
 });
 
-function loadClassSubjects(classId) {
-    // This would load subjects specific to the class
-    // For now, we'll keep all subjects available
-    console.log('Loading subjects for class:', classId);
+function loadClassSubjects(classIds) {
+    fetch('/admin/exams/get-class-subjects?class_ids=' + classIds.join(','))
+        .then(response => response.json())
+        .then(data => {
+            if (data.subjects && data.subjects.length > 0) {
+                populateSubjectScheduling(data.subjects);
+            } else {
+                document.getElementById('subjectScheduling').innerHTML = '<p class="text-muted">No subjects found for the selected classes.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading subjects:', error);
+            document.getElementById('subjectScheduling').innerHTML = '<p class="text-danger">Error loading subjects. Please try again.</p>';
+        });
+}
+
+function populateSubjectScheduling(subjects) {
+    let html = '<div id="subjectsContainer">';
+
+    // Group subjects by class
+    const subjectsByClass = {};
+    subjects.forEach(subject => {
+        if (!subjectsByClass[subject.class_name]) {
+            subjectsByClass[subject.class_name] = [];
+        }
+        subjectsByClass[subject.class_name].push(subject);
+    });
+
+    // Create sections for each class
+    Object.keys(subjectsByClass).forEach(className => {
+        html += `<div class="exam-section">
+            <h6 class="mb-3"><i class="fas fa-book text-info me-2"></i>${className} - Subjects</h6>`;
+
+        subjectsByClass[className].forEach(subject => {
+            html += `
+            <div class="subject-row" data-subject-id="${subject.id}">
+                <div class="row align-items-end">
+                    <div class="col-md-3 mb-2">
+                        <label class="form-label">Subject *</label>
+                        <input type="text" class="form-control" value="${subject.subject_name} (${subject.subject_code})" readonly>
+                        <input type="hidden" name="subjects[][subject_id]" value="${subject.id}" required>
+                        <input type="hidden" name="subjects[][class_id]" value="${subject.class_id}" required>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">Exam Date *</label>
+                        <input type="date" class="form-control exam-date" name="subjects[][exam_date]" required>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">Start Time *</label>
+                        <input type="time" class="form-control start-time" name="subjects[][start_time]" required>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">End Time *</label>
+                        <input type="time" class="form-control end-time" name="subjects[][end_time]" required>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <label class="form-label">Max Marks *</label>
+                        <input type="number" class="form-control max-marks" name="subjects[][max_marks]" min="1" max="100" value="100" required>
+                    </div>
+                    <div class="col-md-1 mb-2">
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="removeSubject(this)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        html += '</div>';
+    });
+
+    html += '</div>';
+
+    // Add button to add custom subjects
+    html += '<div class="text-center mt-3"><button type="button" class="btn btn-outline-primary" onclick="addCustomSubject()"><i class="fas fa-plus me-1"></i>Add Custom Subject</button></div>';
+
+    document.getElementById('subjectScheduling').innerHTML = html;
+
+    // Set default exam date
+    const examDate = document.getElementById('start_date').value;
+    if (examDate) {
+        document.querySelectorAll('.exam-date').forEach(input => {
+            input.value = examDate;
+        });
+    }
+}
+
+function addCustomSubject() {
+    const container = document.getElementById('subjectsContainer');
+    const template = document.getElementById('subjectTemplate');
+    const clone = template.content.cloneNode(true);
+
+    // Set unique IDs
+    subjectCounter++;
+    const subjectRow = clone.querySelector('.subject-row');
+    subjectRow.dataset.subjectId = subjectCounter;
+
+    // Set class_id to first selected class
+    const selectedClasses = Array.from(document.getElementById('class_ids').selectedOptions);
+    if (selectedClasses.length > 0) {
+        const firstClassId = selectedClasses[0].value;
+        subjectRow.querySelector('input[name="subjects[][class_id]"]').value = firstClassId;
+    }
+
+    container.appendChild(clone);
+
+    // Set default exam date
+    const examDate = document.getElementById('start_date').value;
+    if (examDate) {
+        subjectRow.querySelector('.exam-date').value = examDate;
+    }
 }
 </script>
 
