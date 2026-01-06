@@ -169,6 +169,20 @@ CREATE TABLE fee_structures (
     FOREIGN KEY (academic_year_id) REFERENCES academic_years(id)
 );
 
+-- Fees table (assigned fees to students)
+CREATE TABLE fees (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    student_id INT,
+    fee_type VARCHAR(100),
+    amount DECIMAL(10,2),
+    due_date DATE,
+    is_paid BOOLEAN DEFAULT FALSE,
+    academic_year_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES students(id),
+    FOREIGN KEY (academic_year_id) REFERENCES academic_years(id)
+);
+
 -- Student fee collections table
 CREATE TABLE student_fee_collections (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -413,6 +427,21 @@ CREATE TABLE exam_types (
     FOREIGN KEY (academic_year_id) REFERENCES academic_years(id)
 );
 
+-- Exams table (for backward compatibility)
+CREATE TABLE exams (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    exam_name VARCHAR(255) NOT NULL,
+    exam_type ENUM('mid-term', 'final', 'custom') DEFAULT 'custom',
+    class_id INT,
+    start_date DATE,
+    end_date DATE,
+    is_active BOOLEAN DEFAULT TRUE,
+    academic_year_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES classes(id),
+    FOREIGN KEY (academic_year_id) REFERENCES academic_years(id)
+);
+
 -- Exam subjects table (now exam schedules linking exam types to classes and subjects)
 CREATE TABLE exam_subjects (
     id INT PRIMARY KEY AUTO_INCREMENT,
@@ -445,6 +474,7 @@ CREATE TABLE exam_results (
     subject_id INT,
     marks_obtained DECIMAL(5,2),
     percentage DECIMAL(5,2),
+    grade VARCHAR(5),
     remarks TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (exam_type_id) REFERENCES exam_types(id) ON DELETE CASCADE,
