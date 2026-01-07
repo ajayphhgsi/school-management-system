@@ -204,6 +204,23 @@ CREATE TABLE student_fee_collections (
     FOREIGN KEY (collected_by) REFERENCES users(id)
 );
 
+-- Fee payments table (for online payments)
+CREATE TABLE fee_payments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    fee_id INT,
+    amount_paid DECIMAL(10,2),
+    payment_date DATE,
+    payment_mode ENUM('cash', 'online', 'cheque', 'upi'),
+    payment_gateway VARCHAR(100),
+    payment_status ENUM('pending', 'completed', 'failed', 'refunded'),
+    transaction_id VARCHAR(100),
+    refund_amount DECIMAL(10,2),
+    collected_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (fee_id) REFERENCES fees(id),
+    FOREIGN KEY (collected_by) REFERENCES users(id)
+);
+
 -- Expenses table
 CREATE TABLE expenses (
     id INT PRIMARY KEY AUTO_INCREMENT,

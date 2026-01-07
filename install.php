@@ -113,16 +113,36 @@ function checkRequirements() {
 
 function createDatabase() {
     try {
-        $dbPath = BASE_PATH . 'database/school_management.db';
-        $dsn = "sqlite:{$dbPath}";
-        $pdo = new PDO($dsn);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        // Load database config
+        $dbConfig = require CONFIG_PATH . 'database.php';
 
-        // Import SQLite schema
-        $schema = file_get_contents(DATABASE_PATH . 'schema_sqlite.sql');
-        $pdo->exec($schema);
+        if ($dbConfig['driver'] === 'mysql') {
+            $dsn = "mysql:host={$dbConfig['host']};charset={$dbConfig['charset']}";
+            $pdo = new PDO($dsn, $dbConfig['username'], $dbConfig['password']);
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        return true;
+            // Create database if it doesn't exist
+            $pdo->exec("CREATE DATABASE IF NOT EXISTS {$dbConfig['database']} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            $pdo->exec("USE {$dbConfig['database']}");
+
+            // Import MySQL schema
+            $schema = file_get_contents(DATABASE_PATH . 'schema.sql');
+            $pdo->exec($schema);
+
+            return true;
+        } else {
+            // Fallback to SQLite if needed
+            $dbPath = BASE_PATH . 'database/school_management.db';
+            $dsn = "sqlite:{$dbPath}";
+            $pdo = new PDO($dsn);
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+            // Import SQLite schema
+            $schema = file_get_contents(DATABASE_PATH . 'schema_sqlite.sql');
+            $pdo->exec($schema);
+
+            return true;
+        }
     } catch (PDOException $e) {
         return false;
     }
@@ -160,14 +180,22 @@ function validateAdminData($data) {
 
 function createAdminAccount($data) {
     try {
-        $dbPath = BASE_PATH . 'database/school_management.db';
-        $dsn = "sqlite:{$dbPath}";
-        $pdo = new PDO($dsn);
+        // Load database config
+        $dbConfig = require CONFIG_PATH . 'database.php';
+
+        if ($dbConfig['driver'] === 'mysql') {
+            $dsn = "mysql:host={$dbConfig['host']};dbname={$dbConfig['database']};charset={$dbConfig['charset']}";
+            $pdo = new PDO($dsn, $dbConfig['username'], $dbConfig['password']);
+        } else {
+            $dbPath = BASE_PATH . 'database/school_management.db';
+            $dsn = "sqlite:{$dbPath}";
+            $pdo = new PDO($dsn);
+        }
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
 
-        $stmt = $pdo->prepare("INSERT INTO users (username, email, password, role, first_name, last_name) VALUES (?, ?, ?, 'admin', ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO users (username, email, password, role_id, first_name, last_name) VALUES (?, ?, ?, 1, ?, ?)");
         $stmt->execute([
             $data['username'],
             $data['email'],

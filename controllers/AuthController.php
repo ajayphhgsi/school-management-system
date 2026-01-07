@@ -59,7 +59,7 @@ class AuthController extends Controller {
 
         // Authenticate user
         $user = $this->db->selectOne(
-            "SELECT * FROM users WHERE (username = ? OR email = ?) AND is_active = 1",
+            "SELECT u.*, r.role_name as role FROM users u JOIN user_roles r ON u.role_id = r.id WHERE (u.username = ? OR u.email = ?) AND u.is_active = 1",
             [$data['username'], $data['username']]
         );
 
@@ -272,7 +272,7 @@ class AuthController extends Controller {
             }
 
             // Get user
-            $user = $this->db->selectOne("SELECT * FROM users WHERE id = ?", [$userId]);
+            $user = $this->db->selectOne("SELECT u.*, r.role_name as role FROM users u JOIN user_roles r ON u.role_id = r.id WHERE u.id = ?", [$userId]);
             if (!$user || !$user['2fa_enabled'] || !$user['2fa_secret']) {
                 $this->session->setFlash('error', '2FA not properly configured.');
                 header('Location: /login');
