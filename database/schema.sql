@@ -386,7 +386,6 @@ INSERT INTO permissions (permission_name, description) VALUES
 ('manage_students', 'Manage student records'),
 ('manage_classes', 'Manage classes and subjects'),
 ('manage_attendance', 'Mark and view attendance'),
-('manage_exams', 'Create and manage exams'),
 ('manage_fees', 'Manage fee structure and payments'),
 ('manage_events', 'Manage school events'),
 ('manage_gallery', 'Manage photo gallery'),
@@ -394,7 +393,7 @@ INSERT INTO permissions (permission_name, description) VALUES
 ('manage_settings', 'Manage system settings');
 
 INSERT INTO role_permissions (role_id, permission_id) VALUES
-(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9), (1, 10);
+(1, 1), (1, 2), (1, 3), (1, 4), (1, 6), (1, 7), (1, 8), (1, 9), (1, 10);
 
 -- Insert default admin user (password: admin123)
 INSERT INTO users (username, email, password, role_id, first_name, last_name) VALUES
@@ -430,74 +429,9 @@ CREATE TABLE student_optional_subjects (
     FOREIGN KEY (academic_year_id) REFERENCES academic_years(id)
 );
 
--- Exam types table (replaces exams for better hierarchy)
-CREATE TABLE exam_types (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL, -- e.g., "Half Yearly Examination 2025-26"
-    exam_type ENUM('mid-term', 'final', 'custom') DEFAULT 'custom',
-    academic_year_id INT,
-    start_date DATE,
-    end_date DATE,
-    is_active BOOLEAN DEFAULT TRUE,
-    is_published TINYINT(1) DEFAULT 0, -- Controls if students can see results
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (academic_year_id) REFERENCES academic_years(id)
-);
 
--- Exams table (for backward compatibility)
-CREATE TABLE exams (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    exam_name VARCHAR(255) NOT NULL,
-    exam_type ENUM('mid-term', 'final', 'custom') DEFAULT 'custom',
-    class_id INT,
-    start_date DATE,
-    end_date DATE,
-    is_active BOOLEAN DEFAULT TRUE,
-    academic_year_id INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (class_id) REFERENCES classes(id),
-    FOREIGN KEY (academic_year_id) REFERENCES academic_years(id)
-);
 
--- Exam subjects table (now exam schedules linking exam types to classes and subjects)
-CREATE TABLE exam_subjects (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    exam_type_id INT,
-    subject_id INT,
-    class_id INT NOT NULL,
-    exam_date DATE,
-    exam_day VARCHAR(20),
-    start_time TIME,
-    end_time TIME,
-    max_marks DECIMAL(5,2),
-    pass_marks DECIMAL(5,2) DEFAULT 33.00,
-    max_marks_theory DECIMAL(5,2) DEFAULT 0,
-    max_marks_practical DECIMAL(5,2) DEFAULT 0,
-    pass_marks_theory DECIMAL(5,2) DEFAULT 0,
-    pass_marks_practical DECIMAL(5,2) DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (exam_type_id) REFERENCES exam_types(id) ON DELETE CASCADE,
-    FOREIGN KEY (subject_id) REFERENCES subjects(id),
-    FOREIGN KEY (class_id) REFERENCES classes(id)
-);
 
-CREATE INDEX idx_exam_subjects_class_id ON exam_subjects(class_id);
-
--- Exam results table
-CREATE TABLE exam_results (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    exam_type_id INT,
-    student_id INT,
-    subject_id INT,
-    marks_obtained DECIMAL(5,2),
-    percentage DECIMAL(5,2),
-    grade VARCHAR(5),
-    remarks TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (exam_type_id) REFERENCES exam_types(id) ON DELETE CASCADE,
-    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
-    FOREIGN KEY (subject_id) REFERENCES subjects(id)
-);
 
 
 -- Add academic_year_id to classes
@@ -509,8 +443,6 @@ ALTER TABLE expenses ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_
 -- Add academic_year_id to attendance
 ALTER TABLE attendance ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_year_id) REFERENCES academic_years(id);
 
--- Add academic_year_id to exam_results
-ALTER TABLE exam_results ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_year_id) REFERENCES academic_years(id);
 
 -- Add academic_year_id to events
 ALTER TABLE events ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_year_id) REFERENCES academic_years(id);

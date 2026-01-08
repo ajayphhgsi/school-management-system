@@ -83,6 +83,7 @@ $router->post('/admin/classes', 'AdminController@storeClass');
 $router->get('/admin/classes/edit/{id}', 'AdminController@editClass');
 $router->post('/admin/classes/update/{id}', 'AdminController@updateClass');
 $router->get('/admin/classes/delete/{id}', 'AdminController@deleteClass');
+$router->get('/admin/classes/{id}/stats', 'AdminController@getClassStats');
 $router->get('/admin/classes/promote', 'AdminController@promoteStudents');
 $router->post('/admin/classes/promote', 'AdminController@processPromotion');
 $router->get('/admin/subjects', 'AdminController@classes');
@@ -95,23 +96,6 @@ $router->get('/admin/attendance', 'AdminController@attendance');
 $router->get('/admin/attendance/data', 'AdminController@attendanceData');
 $router->post('/admin/attendance/save', 'AdminController@saveAttendance');
 $router->get('/admin/attendance/export', 'AdminController@exportAttendance');
-$router->get('/admin/exams', 'AdminController@exams');
-$router->get('/admin/exams/create', 'AdminController@createExam');
-$router->post('/admin/exams/store', 'AdminController@storeExam');
-$router->get('/admin/exams/edit/{id}', 'AdminController@editExam');
-$router->post('/admin/exams/update/{id}', 'AdminController@updateExam');
-$router->get('/admin/exams/delete/{id}', 'AdminController@deleteExam');
-$router->get('/admin/exams/view/{id}', 'AdminController@viewExam');
-$router->get('/admin/exams/marks-entry', 'AdminController@marksEntry');
-$router->get('/admin/exams/class-marks/{class_id}', 'AdminController@classMarksEntry');
-$router->get('/admin/exams/admit-cards', 'AdminController@admitCards');
-$router->get('/admin/exams/{id}/classes', 'AdminController@getExamClasses');
-$router->get('/admin/exams/{id}/students', 'AdminController@getExamStudents');
-$router->post('/admin/exams/generate-admit-cards', 'AdminController@generateAdmitCards');
-$router->post('/admin/exams/generate-admit-card', 'AdminController@generateAdmitCard');
-$router->get('/admin/exams/print-admit-card/{exam_id}/{student_id}', 'AdminController@printAdmitCard');
-$router->get('/admin/exams/print-admit-cards/{exam_id}', 'AdminController@printAdmitCards');
-$router->get('/admin/exams/print-marksheet/{exam_id}/{student_id}', 'AdminController@printMarksheet');
 
 // Certificate Management
 $router->get('/admin/certificates', 'AdminController@certificates');
@@ -125,20 +109,6 @@ $router->get('/admin/certificates/print/{id}', 'AdminController@printCertificate
 $router->post('/admin/certificates/re-administer/{id}', 'AdminController@reAdministerStudent');
 $router->get('/admin/certificates/print-tc', 'AdminController@printTC');
 
-// Marksheet Generation
-$router->get('/admin/exams/create', 'AdminController@createExam');
-$router->get('/admin/exams/get-class-subjects', 'AdminController@getClassSubjects');
-$router->post('/admin/exams/store', 'AdminController@storeExam');
-$router->get('/admin/exams/view/{id}', 'AdminController@viewExam');
-$router->get('/admin/exams/{id}/results', 'AdminController@enterResults');
-$router->get('/admin/exams/{id}/existing-results', 'AdminController@getExistingResults');
-$router->post('/admin/exams/save-results', 'AdminController@saveResults');
-$router->post('/admin/exams/create-quick-exam', 'AdminController@createQuickExam');
-$router->post('/admin/exams/import-marks-excel', 'AdminController@importMarksExcel');
-$router->get('/admin/exams/marksheets', 'AdminController@marksheets');
-$router->get('/admin/exams/{id}/results/students', 'AdminController@getExamResultsStudents');
-$router->post('/admin/exams/generate-marksheets', 'AdminController@generateMarksheets');
-$router->post('/admin/exams/generate-marksheet', 'AdminController@generateMarksheet');
 $router->get('/admin/fees', 'AdminController@fees');
 $router->get('/admin/fees/export', 'AdminController@exportFees');
 $router->get('/admin/fees/create', 'AdminController@createFee');
@@ -216,8 +186,6 @@ $router->get('/api/v1/students', 'ApiController@getStudents');
 $router->get('/api/v1/students/{id}', 'ApiController@getStudent');
 $router->get('/api/v1/fees', 'ApiController@getFees');
 $router->get('/api/v1/students/{id}/fees', 'ApiController@getStudentFees');
-$router->get('/api/v1/exams', 'ApiController@getExams');
-$router->get('/api/v1/exams/{id}/results', 'ApiController@getExamResults');
 $router->get('/api/v1/attendance', 'ApiController@getAttendance');
 $router->get('/api/v1/reports', 'ApiController@getReports');
 
