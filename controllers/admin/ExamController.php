@@ -130,8 +130,8 @@ class ExamController extends Controller {
         $this->json([
             'success' => true,
             'message' => 'Admit cards generated successfully for ' . count($classIds) . ' classes',
-            'html_url' => '/temp/' . $filename,
-            'pdf_url' => '/temp/' . $filename // In production, this would be PDF URL
+            'html_url' => '/admin/exams/admit-cards/' . $examId,
+            'pdf_url' => '/admin/exams/admit-cards/' . $examId // In production, this would be PDF URL
         ]);
     }
 
@@ -219,8 +219,8 @@ class ExamController extends Controller {
         $this->json([
             'success' => true,
             'message' => 'Admit card generated successfully',
-            'html_url' => '/temp/' . $filename,
-            'pdf_url' => '/temp/' . $filename
+            'html_url' => '/admin/exams/print-admit-card/' . $examId . '/' . $studentId,
+            'pdf_url' => '/admin/exams/print-admit-card/' . $examId . '/' . $studentId
         ]);
     }
 

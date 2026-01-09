@@ -148,6 +148,7 @@ $router->get('/admin/exams/results/{id}', 'admin/ExamController@enterResults');
 $router->post('/admin/exams/save-results', 'admin/ExamController@saveResults');
 $router->get('/admin/exams/admit-cards', 'admin/ExamController@admitCards');
 $router->get('/admin/exams/admit-cards/{id}', 'admin/ExamController@printAdmitCards');
+$router->get('/admin/exams/print-admit-card/{examId}/{studentId}', 'admin/ExamController@printAdmitCard');
 $router->post('/admin/exams/generate-admit-cards', 'admin/ExamController@generateAdmitCards');
 $router->get('/admin/exams/marksheets', 'admin/ExamController@marksheets');
 $router->get('/admin/exams/marksheets/{id}', 'admin/ExamController@printMarksheets');
