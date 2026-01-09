@@ -74,11 +74,15 @@ class Router {
             call_user_func_array($handler, $positionalParams);
         } elseif (is_string($handler)) {
             list($controller, $method) = explode('@', $handler);
-            $controllerFile = CONTROLLERS_PATH . $controller . '.php';
+            // Support subdirectories in controller path
+            $controllerPath = str_replace('/', DIRECTORY_SEPARATOR, $controller);
+            $controllerFile = CONTROLLERS_PATH . $controllerPath . '.php';
 
             if (file_exists($controllerFile)) {
                 require_once $controllerFile;
-                $controllerInstance = new $controller();
+                // Extract class name from path (last part after /)
+                $className = basename(str_replace('\\', '/', $controller));
+                $controllerInstance = new $className();
                 if (method_exists($controllerInstance, $method)) {
                     call_user_func_array([$controllerInstance, $method], $positionalParams);
                 } else {

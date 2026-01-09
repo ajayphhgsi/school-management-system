@@ -62,93 +62,114 @@ $router->get('/contact', 'PublicController@contact');
 $router->post('/contact', 'PublicController@contact');
 
 // Admin routes
-$router->get('/admin/dashboard', 'AdminController@dashboard');
-$router->get('/admin/students', 'AdminController@students');
-$router->get('/admin/students/print', 'AdminController@printStudents');
-$router->get('/admin/students/create', 'AdminController@createStudent');
-$router->get('/admin/students/add', 'AdminController@addStudent');
-$router->get('/admin/students/add/{id}', 'AdminController@addStudent');
-$router->post('/admin/students', 'AdminController@storeStudent');
-$router->get('/admin/students/view/{id}', 'AdminController@viewStudent');
-$router->get('/admin/students/edit/{id}', 'AdminController@editStudent');
-$router->post('/admin/students/update/{id}', 'AdminController@updateStudent');
-$router->get('/admin/students/delete/{id}', 'AdminController@deleteStudent');
-$router->get('/admin/students/bulk-import', 'AdminController@bulkImportStudents');
-$router->post('/admin/students/process-bulk-import', 'AdminController@processBulkImportStudents');
-$router->get('/admin/students/bulk-export', 'AdminController@bulkExportStudents');
-$router->get('/admin/get-next-scholar-number', 'AdminController@getNextScholarNumber');
-$router->get('/admin/classes', 'AdminController@classes');
-$router->get('/admin/classes/create', 'AdminController@createClass');
-$router->post('/admin/classes', 'AdminController@storeClass');
-$router->get('/admin/classes/edit/{id}', 'AdminController@editClass');
-$router->post('/admin/classes/update/{id}', 'AdminController@updateClass');
-$router->get('/admin/classes/delete/{id}', 'AdminController@deleteClass');
-$router->get('/admin/classes/{id}/stats', 'AdminController@getClassStats');
-$router->get('/admin/classes/promote', 'AdminController@promoteStudents');
-$router->post('/admin/classes/promote', 'AdminController@processPromotion');
-$router->get('/admin/subjects', 'AdminController@classes');
-$router->get('/admin/subjects/create', 'AdminController@createSubject');
-$router->post('/admin/subjects', 'AdminController@storeSubject');
-$router->get('/admin/subjects/edit/{id}', 'AdminController@editSubject');
-$router->post('/admin/subjects/update/{id}', 'AdminController@updateSubject');
-$router->get('/admin/subjects/delete/{id}', 'AdminController@deleteSubject');
-$router->get('/admin/attendance', 'AdminController@attendance');
-$router->get('/admin/attendance/data', 'AdminController@attendanceData');
-$router->post('/admin/attendance/save', 'AdminController@saveAttendance');
-$router->get('/admin/attendance/export', 'AdminController@exportAttendance');
+$router->get('/admin/dashboard', 'admin/DashboardController@dashboard');
+$router->get('/admin/students', 'admin/StudentController@students');
+$router->get('/admin/students/print', 'admin/StudentController@printStudents');
+$router->get('/admin/students/create', 'admin/StudentController@createStudent');
+$router->get('/admin/students/add', 'admin/StudentController@addStudent');
+$router->get('/admin/students/add/{id}', 'admin/StudentController@addStudent');
+$router->post('/admin/students', 'admin/StudentController@storeStudent');
+$router->get('/admin/students/view/{id}', 'admin/StudentController@viewStudent');
+$router->get('/admin/students/edit/{id}', 'admin/StudentController@editStudent');
+$router->post('/admin/students/update/{id}', 'admin/StudentController@updateStudent');
+$router->get('/admin/students/delete/{id}', 'admin/StudentController@deleteStudent');
+$router->get('/admin/students/bulk-import', 'admin/StudentController@bulkImportStudents');
+$router->post('/admin/students/process-bulk-import', 'admin/StudentController@processBulkImportStudents');
+$router->get('/admin/students/bulk-export', 'admin/StudentController@bulkExportStudents');
+$router->get('/admin/get-next-scholar-number', 'admin/StudentController@getNextScholarNumber');
+$router->get('/admin/classes', 'admin/ClassController@classes');
+$router->get('/admin/classes/create', 'admin/ClassController@createClass');
+$router->post('/admin/classes', 'admin/ClassController@storeClass');
+$router->get('/admin/classes/edit/{id}', 'admin/ClassController@editClass');
+$router->post('/admin/classes/update/{id}', 'admin/ClassController@updateClass');
+$router->get('/admin/classes/delete/{id}', 'admin/ClassController@deleteClass');
+$router->get('/admin/classes/{id}/stats', 'admin/ClassController@getClassStats');
+$router->get('/admin/classes/promote', 'admin/ClassController@promoteStudents');
+$router->post('/admin/classes/promote', 'admin/ClassController@processPromotion');
+$router->get('/admin/subjects', 'admin/ClassController@subjects');
+$router->get('/admin/subjects/create', 'admin/ClassController@createSubject');
+$router->post('/admin/subjects', 'admin/ClassController@storeSubject');
+$router->get('/admin/subjects/edit/{id}', 'admin/ClassController@editSubject');
+$router->post('/admin/subjects/update/{id}', 'admin/ClassController@updateSubject');
+$router->get('/admin/subjects/delete/{id}', 'admin/ClassController@deleteSubject');
+$router->get('/admin/attendance', 'admin/AttendanceController@attendance');
+$router->get('/admin/attendance/data', 'admin/AttendanceController@attendanceData');
+$router->post('/admin/attendance/save', 'admin/AttendanceController@saveAttendance');
+$router->get('/admin/attendance/export', 'admin/AttendanceController@exportAttendance');
 
 // Certificate Management
-$router->get('/admin/certificates', 'AdminController@certificates');
-$router->get('/admin/certificates/students', 'AdminController@getCertificateStudents');
-$router->post('/admin/certificates/generate', 'AdminController@generateCertificate');
-$router->get('/admin/certificates/tc', 'AdminController@tcCertificates');
-$router->get('/admin/certificates/character', 'AdminController@characterCertificates');
-$router->get('/admin/certificates/bonafide', 'AdminController@bonafideCertificates');
-$router->get('/admin/certificates/view/{id}', 'AdminController@viewCertificate');
-$router->get('/admin/certificates/print/{id}', 'AdminController@printCertificate');
-$router->post('/admin/certificates/re-administer/{id}', 'AdminController@reAdministerStudent');
-$router->get('/admin/certificates/print-tc', 'AdminController@printTC');
+$router->get('/admin/certificates', 'admin/CertificateController@certificates');
+$router->get('/admin/certificates/students', 'admin/CertificateController@getCertificateStudents');
+$router->post('/admin/certificates/generate', 'admin/CertificateController@generateCertificate');
+$router->get('/admin/certificates/tc', 'admin/CertificateController@tcCertificates');
+$router->get('/admin/certificates/character', 'admin/CertificateController@characterCertificates');
+$router->get('/admin/certificates/bonafide', 'admin/CertificateController@bonafideCertificates');
+$router->get('/admin/certificates/view/{id}', 'admin/CertificateController@viewCertificate');
+$router->get('/admin/certificates/print/{id}', 'admin/CertificateController@printCertificate');
+$router->post('/admin/certificates/re-administer/{id}', 'admin/CertificateController@reAdministerStudent');
+$router->get('/admin/certificates/print-tc', 'admin/CertificateController@printTC');
 
-$router->get('/admin/fees', 'AdminController@fees');
-$router->get('/admin/fees/export', 'AdminController@exportFees');
-$router->get('/admin/fees/create', 'AdminController@createFee');
-$router->post('/admin/fees/store', 'AdminController@storeFee');
-$router->get('/admin/fees/students', 'AdminController@getStudentsForFees');
-$router->post('/admin/fees/bulk-assign', 'AdminController@bulkAssignFees');
+$router->get('/admin/fees', 'admin/FeeController@fees');
+$router->get('/admin/fees/export', 'admin/FeeController@exportFees');
+$router->get('/admin/fees/create', 'admin/FeeController@createFee');
+$router->post('/admin/fees/store', 'admin/FeeController@storeFee');
+$router->get('/admin/fees/students', 'admin/FeeController@getStudentsForFees');
+$router->post('/admin/fees/bulk-assign', 'admin/FeeController@bulkAssignFees');
+$router->post('/admin/payments/initiate', 'admin/PaymentController@initiatePayment');
+$router->post('/admin/payments/process', 'admin/PaymentController@processPayment');
+$router->post('/admin/payments/refund', 'admin/PaymentController@refundPayment');
+$router->get('/admin/payments/status', 'admin/PaymentController@getPaymentStatus');
 
 // Expense Management
-$router->get('/admin/expenses', 'AdminController@expenses');
-$router->get('/admin/expenses/create', 'AdminController@createExpense');
-$router->post('/admin/expenses/store', 'AdminController@storeExpense');
-$router->get('/admin/expenses/export', 'AdminController@exportExpenses');
+$router->get('/admin/expenses', 'admin/ExpenseController@expenses');
+$router->get('/admin/expenses/create', 'admin/ExpenseController@createExpense');
+$router->post('/admin/expenses/store', 'admin/ExpenseController@storeExpense');
+$router->get('/admin/expenses/export', 'admin/ExpenseController@exportExpenses');
 
 // Notifications
-$router->get('/admin/notifications', 'AdminController@notifications');
-$router->get('/admin/notifications/view', 'AdminController@viewNotifications');
-$router->post('/admin/notifications/mark-read', 'AdminController@markNotificationRead');
-$router->get('/admin/notifications/get-students-for-notifications', 'AdminController@getStudentsForNotifications');
-$router->post('/admin/notifications/send', 'AdminController@sendNotification');
+$router->get('/admin/notifications', 'admin/NotificationController@notifications');
+$router->get('/admin/notifications/view', 'admin/NotificationController@viewNotifications');
+$router->post('/admin/notifications/mark-read', 'admin/NotificationController@markNotificationRead');
+$router->get('/admin/notifications/get-students-for-notifications', 'admin/NotificationController@getStudentsForNotifications');
+$router->post('/admin/notifications/send', 'admin/NotificationController@sendNotification');
 
-$router->get('/admin/events', 'AdminController@events');
-$router->get('/admin/gallery', 'AdminController@gallery');
-$router->get('/admin/reports', 'AdminController@reports');
+$router->get('/admin/events', 'admin/EventController@events');
+$router->get('/admin/gallery', 'admin/GalleryController@gallery');
+$router->get('/admin/exams', 'admin/ExamController@index');
+$router->get('/admin/exams/create', 'admin/ExamController@createExam');
+$router->post('/admin/exams/store', 'admin/ExamController@storeExam');
+$router->get('/admin/exams/get-class-subjects', 'admin/ExamController@getClassSubjects');
+$router->get('/admin/exams/get-exam-classes', 'admin/ExamController@getExamClasses');
+$router->get('/admin/exams/view/{id}', 'admin/ExamController@viewExam');
+$router->get('/admin/exams/edit/{id}', 'admin/ExamController@editExam');
+$router->post('/admin/exams/update/{id}', 'admin/ExamController@updateExam');
+$router->get('/admin/exams/delete/{id}', 'admin/ExamController@deleteExam');
+$router->get('/admin/exams/results/{id}', 'admin/ExamController@enterResults');
+$router->post('/admin/exams/save-results', 'admin/ExamController@saveResults');
+$router->get('/admin/exams/admit-cards', 'admin/ExamController@admitCards');
+$router->get('/admin/exams/admit-cards/{id}', 'admin/ExamController@printAdmitCards');
+$router->post('/admin/exams/generate-admit-cards', 'admin/ExamController@generateAdmitCards');
+$router->get('/admin/exams/marksheets', 'admin/ExamController@marksheets');
+$router->get('/admin/exams/marksheets/{id}', 'admin/ExamController@printMarksheets');
+$router->post('/admin/exams/generate-marksheets', 'admin/ExamController@generateMarksheets');
+$router->get('/admin/reports', 'admin/ReportController@reports');
 
 // Report Generation Routes
-$router->get('/admin/generate-student-report', 'AdminController@generateStudentReport');
-$router->get('/admin/generate-financial-report', 'AdminController@generateFinancialReport');
-$router->get('/admin/generate-attendance-report', 'AdminController@generateAttendanceReport');
-$router->get('/admin/generate-academic-report', 'AdminController@generateAcademicReport');
-$router->post('/admin/generate-custom-report', 'AdminController@generateCustomReport');
+$router->get('/admin/generate-student-report', 'admin/ReportController@generateStudentReport');
+$router->get('/admin/generate-financial-report', 'admin/ReportController@generateFinancialReport');
+$router->get('/admin/generate-attendance-report', 'admin/ReportController@generateAttendanceReport');
+$router->get('/admin/generate-academic-report', 'admin/ReportController@generateAcademicReport');
+$router->post('/admin/generate-custom-report', 'admin/ReportController@generateCustomReport');
 
-$router->get('/admin/settings', 'AdminController@settings');
-$router->post('/admin/settings', 'AdminController@saveSettings');
+$router->get('/admin/settings', 'admin/SettingsController@settings');
+$router->post('/admin/settings', 'admin/SettingsController@saveSettings');
 
 // Homepage Management
-$router->get('/admin/homepage', 'AdminController@homepage');
-$router->get('/admin/homepage/carousel', 'AdminController@homepageCarousel');
-$router->post('/admin/homepage/carousel', 'AdminController@saveHomepageCarousel');
-$router->get('/admin/homepage/about', 'AdminController@homepageAbout');
-$router->post('/admin/homepage/about', 'AdminController@saveHomepageAbout');
+$router->get('/admin/homepage', 'admin/HomepageController@homepage');
+$router->get('/admin/homepage/carousel', 'admin/HomepageController@homepageCarousel');
+$router->post('/admin/homepage/carousel', 'admin/HomepageController@saveHomepageCarousel');
+$router->get('/admin/homepage/about', 'admin/HomepageController@homepageAbout');
+$router->post('/admin/homepage/about', 'admin/HomepageController@saveHomepageAbout');
 
 // SuperAdmin routes
 $router->get('/superadmin/dashboard', 'SuperAdminController@dashboard');
@@ -178,7 +199,7 @@ $router->get('/student/change-password', 'StudentController@changePassword');
 $router->post('/student/change-password', 'StudentController@updatePassword');
 
 // Admin Student routes
-$router->get('/admin/students/print-application/{id}', 'AdminController@printStudentApplication');
+$router->get('/admin/students/print-application/{id}', 'admin/StudentController@printStudentApplication');
 
 // API routes
 $router->post('/api/v1/auth/login', 'ApiController@login');
