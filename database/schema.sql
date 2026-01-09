@@ -376,6 +376,81 @@ CREATE TABLE book_issues (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- Exams table
+CREATE TABLE IF NOT EXISTS exams (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    exam_name VARCHAR(255) NOT NULL,
+    exam_type ENUM('quarterly', 'halfyearly', 'annually', 'custom') DEFAULT 'custom',
+    class_id INT, -- For backward compatibility, can be null for multi-class exams
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    academic_year_id INT,
+    is_active BOOLEAN DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (class_id) REFERENCES classes(id),
+    FOREIGN KEY (academic_year_id) REFERENCES academic_years(id)
+);
+
+-- Exam subjects table (junction table for exam-subject-class relationships)
+CREATE TABLE IF NOT EXISTS exam_subjects (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    exam_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    class_id INT NOT NULL, -- Which class this subject exam is for
+    exam_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    max_marks DECIMAL(5,2) DEFAULT 100.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES subjects(id),
+    FOREIGN KEY (class_id) REFERENCES classes(id)
+);
+
+-- Exam results table
+CREATE TABLE IF NOT EXISTS exam_results (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    exam_id INT NOT NULL,
+    student_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    marks_obtained DECIMAL(5,2),
+    max_marks DECIMAL(5,2),
+    grade VARCHAR(5),
+    percentage DECIMAL(5,2),
+    academic_year_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY (subject_id) REFERENCES subjects(id),
+    FOREIGN KEY (academic_year_id) REFERENCES academic_years(id)
+);
+
+-- Admit card instructions table
+CREATE TABLE IF NOT EXISTS admit_card_instructions (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    instruction_text TEXT NOT NULL,
+    is_active BOOLEAN DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default admit card instructions
+INSERT IGNORE INTO admit_card_instructions (instruction_text) VALUES
+('Candidates must reach the examination center 30 minutes before the scheduled time.'),
+('Bring this admit card and a valid photo ID proof to the examination center.'),
+('Electronic devices like mobile phones, calculators are not allowed in the examination hall.'),
+('Candidates must follow all instructions given by the invigilator.'),
+('Any attempt to cheat or misconduct will result in disqualification.');
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_exams_academic_year ON exams(academic_year_id);
+CREATE INDEX IF NOT EXISTS idx_exams_active ON exams(is_active);
+CREATE INDEX IF NOT EXISTS idx_exam_subjects_exam ON exam_subjects(exam_id);
+CREATE INDEX IF NOT EXISTS idx_exam_subjects_class ON exam_subjects(class_id);
+CREATE INDEX IF NOT EXISTS idx_exam_subjects_date ON exam_subjects(exam_date);
+CREATE INDEX IF NOT EXISTS idx_exam_results_exam ON exam_results(exam_id);
+CREATE INDEX IF NOT EXISTS idx_exam_results_student ON exam_results(student_id);
+CREATE INDEX IF NOT EXISTS idx_exam_results_subject ON exam_results(subject_id);
+
 -- Insert default data
 INSERT INTO user_roles (role_name, description) VALUES
 ('admin', 'Administrator with full access'),
@@ -390,7 +465,8 @@ INSERT INTO permissions (permission_name, description) VALUES
 ('manage_events', 'Manage school events'),
 ('manage_gallery', 'Manage photo gallery'),
 ('view_reports', 'View reports and analytics'),
-('manage_settings', 'Manage system settings');
+('manage_settings', 'Manage system settings'),
+('manage_academic_years', 'Manage academic years');
 
 INSERT INTO role_permissions (role_id, permission_id) VALUES
 (1, 1), (1, 2), (1, 3), (1, 4), (1, 6), (1, 7), (1, 8), (1, 9), (1, 10);
@@ -411,9 +487,6 @@ INSERT INTO settings (setting_key, setting_value, setting_type) VALUES
 
 -- Add superadmin role
 INSERT INTO user_roles (role_name, description) VALUES ('superadmin', 'Super administrator with all permissions');
-
--- Add permission for managing academic years
-INSERT INTO permissions (permission_name, description) VALUES ('manage_academic_years', 'Manage academic years');
 
 -- Assign all permissions to superadmin
 INSERT INTO role_permissions (role_id, permission_id) SELECT (SELECT id FROM user_roles WHERE role_name = 'superadmin'), id FROM permissions;
@@ -453,8 +526,105 @@ ALTER TABLE certificates ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (acade
 -- Add tc_issued field to students table for TC system
 ALTER TABLE students ADD COLUMN tc_issued BOOLEAN DEFAULT FALSE;
 
+-- Add academic_year_id to gallery
+ALTER TABLE gallery ADD COLUMN academic_year_id INT, ADD FOREIGN KEY (academic_year_id) REFERENCES academic_years(id);
+
 -- Insert default academic year
 INSERT INTO academic_years (year_name, start_date, end_date) VALUES ('2024-2025', '2024-04-01', '2025-03-31');
+
+-- Insert sample classes
+INSERT INTO classes (class_name, section, academic_year_id) VALUES
+('Class 1', 'A', 1),
+('Class 2', 'A', 1),
+('Class 3', 'A', 1),
+('Class 4', 'A', 1),
+('Class 5', 'A', 1),
+('Class 6', 'A', 1),
+('Class 7', 'A', 1),
+('Class 8', 'A', 1),
+('Class 9', 'A', 1),
+('Class 10', 'A', 1);
+
+-- Insert sample subjects
+INSERT INTO subjects (subject_name, subject_code) VALUES
+('Mathematics', 'MATH'),
+('English', 'ENG'),
+('Hindi', 'HIN'),
+('Science', 'SCI'),
+('Social Science', 'SST'),
+('Computer Science', 'CS'),
+('Physical Education', 'PE'),
+('Art', 'ART'),
+('Music', 'MUS');
+
+-- Insert class subjects (assign subjects to classes)
+-- Assuming class IDs start from 1
+INSERT INTO class_subjects (class_id, subject_id, teacher_id) VALUES
+-- Class 1A (id=1)
+(1, 1, 1), -- Math
+(1, 2, 1), -- English
+(1, 3, 1), -- Hindi
+(1, 4, 1), -- Science
+(1, 5, 1), -- SST
+-- Class 2A (id=2)
+(2, 1, 1),
+(2, 2, 1),
+(2, 3, 1),
+(2, 4, 1),
+(2, 5, 1),
+-- Class 3A (id=3)
+(3, 1, 1),
+(3, 2, 1),
+(3, 3, 1),
+(3, 4, 1),
+(3, 5, 1),
+-- Class 4A (id=4)
+(4, 1, 1),
+(4, 2, 1),
+(4, 3, 1),
+(4, 4, 1),
+(4, 5, 1),
+-- Class 5A (id=5)
+(5, 1, 1),
+(5, 2, 1),
+(5, 3, 1),
+(5, 4, 1),
+(5, 5, 1),
+-- Class 6A (id=6)
+(6, 1, 1),
+(6, 2, 1),
+(6, 3, 1),
+(6, 4, 1),
+(6, 5, 1),
+(6, 6, 1), -- CS
+-- Class 7A (id=7)
+(7, 1, 1),
+(7, 2, 1),
+(7, 3, 1),
+(7, 4, 1),
+(7, 5, 1),
+(7, 6, 1),
+-- Class 8A (id=8)
+(8, 1, 1),
+(8, 2, 1),
+(8, 3, 1),
+(8, 4, 1),
+(8, 5, 1),
+(8, 6, 1),
+-- Class 9A (id=9)
+(9, 1, 1),
+(9, 2, 1),
+(9, 3, 1),
+(9, 4, 1),
+(9, 5, 1),
+(9, 6, 1),
+-- Class 10A (id=10)
+(10, 1, 1),
+(10, 2, 1),
+(10, 3, 1),
+(10, 4, 1),
+(10, 5, 1),
+(10, 6, 1);
 
 -- Add 2FA columns to users (already added in table definition)
 -- ALTER TABLE users ADD COLUMN 2fa_secret VARCHAR(255), ADD COLUMN 2fa_enabled BOOLEAN DEFAULT FALSE;
